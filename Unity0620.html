@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>實境冒險遊戲</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f7f4eb;
+        }
+
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('bg.png'); /* 請確保背景圖片名稱為 bg.png */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部深藍綠色實時時間狀態欄 */
+        .top-time-bar {
+            background-color: #1f8195;
+            color: #ffffff;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* 玩家資訊與積分狀態列 */
+        .info-bar {
+            background-color: #f4efe2;
+            color: #111111;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        /* 主要卡片容器 */
+        .content-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 半透明淡青綠色圓角卡片 */
+        .card {
+            background-color: rgba(225, 241, 239, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 35px 25px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 畫面切換控制 */
+        #home-view { display: block; }
+        #ready-view { display: none; }
+        #scan-view { display: none; }
+        #task-view { display: none; }
+
+        .card h2 {
+            color: #111111;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .input-field {
+            width: 100%;
+            height: 54px;
+            border: none;
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 0 20px;
+            font-size: 18px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        /* 按鈕基礎樣式 */
+        .btn {
+            width: 100%;
+            height: 56px;
+            border: none;
+            background-color: #00a854;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 168, 84, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+            margin-bottom: 20px;
+        }
+
+        /* 掃描介面的藍綠色提示鈕 */
+        .btn-blue {
+            background-color: #1f8195;
+            box-shadow: 0 6px 15px rgba(31, 129, 149, 0.3);
+            cursor: default;
+            margin-bottom: 0;
+        }
+
+        /* Task 1 專屬：粉紫色上載按鈕 */
+        .btn-upload {
+            background-color: #e2a4f4;
+            color: #000000;
+            box-shadow: 0 6px 15px rgba(226, 164, 244, 0.4);
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        /* 返回掃描紅橘色小按鈕 */
+        .btn-back {
+            display: inline-block;
+            width: auto;
+            height: auto;
+            padding: 8px 18px;
+            background-color: #ff6b6b;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:active, .btn-back:active, .btn-upload:active {
+            transform: scale(0.97);
+        }
+
+        /* ⏳ 倒數計時器排版與顏色 */
+        .timer-label {
+            color: #1f8195;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .timer-display {
+            color: #1f8195;
+            font-size: 46px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        /* 📷 相機正方形黑色框（通用與 Task 4 共用） */
+        .scanner-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #000000;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 0 auto 25px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+        }
+
+        #reader button, #task4-reader button { display: none !important; }
+        #reader img, #task4-reader img { display: none !important; }
+        #reader, #task4-reader { border: none !important; }
+
+        /* 🟢🔴 下方動態長條 */
+        .status-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #00a854; 
+            border-radius: 5px;
+            margin-bottom: 25px;
+            transition: background-color 0.3s ease;
+        }
+
+        .status-bar.error {
+            background-color: #d93838; 
+        }
+
+        /* --- Task 關卡畫面基礎排版 --- */
+        .task-header {
+            text-align: left;
+            color: #1f8195;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .task-title {
+            text-align: left;
+            color: #1f8195;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .task-description {
+            text-align: left;
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .task-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .points-award {
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* --- 🎂 Task 3 專屬排版樣式 --- */
+        .birthday-container {
+            display: none; 
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .birthday-label-row {
+            display: flex;
+            justify-content: space-between;
+            color: #1f8195;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        .birthday-row {
+            margin-bottom: 15px;
+        }
+
+        .birthday-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .birthday-input {
+            width: 46%;
+            height: 44px;
+            border: none;
+            background-color: #ffffff;
+            border-radius: 22px;
+            padding: 0 15px;
+            font-size: 16px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+            outline: none;
+        }
+
+        .birthday-line {
+            width: 100%;
+            height: 6px;
+            background-color: #d93838; 
+            border-radius: 3px;
+            margin-top: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .birthday-line.correct {
+            background-color: #00a854; 
+        }
+
+        /* --- 🍾 Task 4 專屬排版樣式 --- */
+        .task4-scanner-container {
+            display: none;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        
+        <div id="global-header" style="display: none;">
+            <div class="top-time-bar" id="real-time">00:00:00</div>
+            <div class="info-bar">
+                <div id="display-player-name">玩家名稱</div>
+                <div id="display-score">積分：0000</div>
+            </div>
+        </div>
+
+        <div class="content-body">
+
+            <div id="home-view" class="card">
+                <h2>玩家名稱</h2>
+                <input type="text" id="player-name" class="input-field" placeholder="請輸入名字..." autocomplete="off">
+                <button class="btn" onclick="loginGame()" style="margin-bottom:0;">登入遊戲</button>
+            </div>
+
+            <div id="ready-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="ready-clock">00:20:00</div>
+                <button class="btn" onclick="startGameClock()" style="margin-bottom:0;">開始遊戲</button>
+            </div>
+
+            <div id="scan-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="scan-clock">00:20:00</div>
+                <div class="scanner-box" id="reader"></div>
+                <div class="status-bar" id="indicator-bar"></div>
+                <button class="btn btn-blue">請將鏡頭對準 QR Code</button>
+            </div>
+
+            <div id="task-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="task-clock">00:20:00</div>
+                
+                <div class="task-header" id="task-id-label">Task 1</div>
+                <div class="task-title" id="task-main-title">標題</div>
+                <div class="task-description" id="task-desc">描述</div>
+                
+                <button id="task-upload-btn" class="btn btn-upload" onclick="openExternalForm()">上 載</button>
+                <input type="text" id="task-password-input" class="input-field" placeholder="輸入密碼" oninput="checkPasswordAuto(this)" autocomplete="off">
+                <button id="task-verify-btn" class="btn" onclick="checkPasswordManual()">核對答案</button>
+                
+                <div id="task3-birthday-box" class="birthday-container">
+                    <div class="birthday-label-row">
+                        <div style="width: 46%; text-align: center;">Unity團隊</div>
+                        <div style="width: 46%; text-align: center;">生日日期 (MM/DD)</div>
+                    </div>
+                    
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-1" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-1" class="birthday-input" placeholder="0101" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-1" class="birthday-line"></div>
+                    </div>
+                    
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-2" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-2" class="birthday-input" placeholder="0202" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-2" class="birthday-line"></div>
+                    </div>
+                    
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-3" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-3" class="birthday-input" placeholder="0303" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-3" class="birthday-line"></div>
+                    </div>
+                </div>
+
+                <div id="task4-scanner-box" class="task4-scanner-container">
+                    <div class="scanner-box" id="task4-reader"></div>
+                    <div class="status-bar" id="task4-indicator-bar"></div>
+                </div>
+                
+                <div class="task-footer-info">
+                    <div class="points-award" id="task-points-label">完成可獲 200 分</div>
+                    <button class="btn-back" onclick="cleanAndBackToScan()">返回掃描</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 🎮 遊戲核心關卡資料庫 (整合 Task 1, 2, 3, 4)
+        const taskDatabase = {
+            "001": { 
+                id: "Task 1", 
+                title: "攝影 Pro Max", 
+                desc: "請拍攝你自己與芒果樹的合照並上載至Google Form", 
+                url: "https://docs.google.com/forms/d/e/1FAIpQLSf9LMqvC9gSHjg4H0oHexYyGiyNE_rdfBm2lqJduYfh_fpGKA/viewform?usp=dialog", 
+                password: "2847", 
+                points: 200,
+                type: "auto" 
+            },
+            "002": {
+                id: "Task 2",
+                title: "Eye 瘋",
+                desc: "請數出義社社borad上共有多少人頭。",
+                url: "",
+                password: "25",
+                points: 200,
+                type: "manual" 
+            },
+            "003": {
+                id: "Task 3",
+                title: "Happy birthday",
+                desc: "請回答3位Unity團隊生日日期",
+                points: 100,
+                type: "birthday",
+                answers: [
+                    { name: "a", date: "0101" }, 
+                    { name: "b", date: "0202" }, 
+                    { name: "c", date: "0303" }  
+                ]
+            },
+            "004": {
+                id: "Task 4",
+                title: "Bottle Flip",
+                desc: "完成後 請掃描 Admin code 加分",
+                points: 100,
+                type: "admin_scan",
+                admins: {
+                    "kit": "Kit",
+                    "suki": "Suki"
+                }
+            }
+        };
+
+        let currentScore = 0;
+        let html5QrcodeScanner = null;
+        let task4QrcodeScanner = null; // Task 4 專屬鏡頭變數
+        let countdownInterval = null;
+        let timeLeftSeconds = 20 * 60; 
+        let finishedTasksLog = {}; 
+        let isProcessingScan = false; 
+        let currentActiveTaskKey = null; 
+
+        // --- 1. 頂部實時時鐘 ---
+        function updateRealTime() {
+            const now = new Date();
+            document.getElementById('real-time').innerText = 
+                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+        setInterval(updateRealTime, 1000);
+        updateRealTime();
+
+        // --- 2. 玩家登入 ---
+        function loginGame() {
+            const name = document.getElementById('player-name').value.trim();
+            if (!name) return alert("請輸入名字！");
+            document.getElementById('display-player-name').innerText = name;
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('global-header').style.display = 'block';
+            document.getElementById('ready-view').style.display = 'block';
+        }
+
+        // --- 3. 開始遊戲 ---
+        function startGameClock() {
+            document.getElementById('ready-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            startCountdown(); 
+            initCamera();     
+        }
+
+        // --- 4. 初始化主相機 ---
+        function initCamera() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.start(
+                    { facingMode: "environment" }, 
+                    { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
+                    (decodedText) => { handleScanResult(decodedText.trim()); }, 
+                    () => {}  
+                ).catch(err => console.error(err));
+                return;
+            }
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
+                (decodedText) => { handleScanResult(decodedText.trim()); }, 
+                () => {}  
+            ).catch(err => { alert("請確保開啟相機權限！"); });
+        }
+
+        // --- 5. 解讀條碼與動態介面切換 ---
+        function handleScanResult(codeText) {
+            if (isProcessingScan) return; 
+            const lowerCode = codeText.toLowerCase();
+
+            if (lowerCode === 'reset') {
+                isProcessingScan = true;
+                resetWholeGame();
+                isProcessingScan = false;
+                return;
+            }
+
+            if (taskDatabase[lowerCode]) {
+                isProcessingScan = true;
+                
+                if (finishedTasksLog[lowerCode]) {
+                    alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
+                    setTimeout(() => { isProcessingScan = false; }, 2000);
+                    return;
+                }
+
+                currentActiveTaskKey = lowerCode;
+                const data = taskDatabase[lowerCode];
+                
+                document.getElementById('task-id-label').innerText = data.id;
+                document.getElementById('task-main-title').innerText = data.title;
+                document.getElementById('task-desc').innerText = data.desc;
+                document.getElementById('task-points-label').innerText = `完成可獲 ${data.points} 分`;
+                
+                // 重置各輸入欄
+                document.getElementById('task-password-input').value = ""; 
+                for(let i=1; i<=3; i++){
+                    document.getElementById(`t3-name-${i}`).value = "";
+                    document.getElementById(`t3-date-${i}`).value = "";
+                    document.getElementById(`t3-line-${i}`).classList.remove('correct');
+                }
+
+                // 🌟 核心排版動態切換
+                if (data.type === "auto") {
+                    document.getElementById('task-upload-btn').style.display = "block";
+                    document.getElementById('task-password-input').style.display = "block";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task4-scanner-box').style.display = "none";
+                    document.getElementById('task-password-input').placeholder = "輸入密碼";
+                } else if (data.type === "manual") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "block";
+                    document.getElementById('task-verify-btn').style.display = "block";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task4-scanner-box').style.display = "none";
+                    document.getElementById('task-password-input').placeholder = "輸入欄";
+                } else if (data.type === "birthday") {
+       
