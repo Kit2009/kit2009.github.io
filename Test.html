@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -314,13 +314,13 @@
     </div>
 
     <script>
-        // 關卡與資料庫設定（未來如需新增關卡，可直接在下方擴充）
+        // 關卡與資料庫設定（已更新 Google Form 連結）
         const taskDatabase = {
             "001": { 
                 id: "Task 1", 
                 title: "攝影 Pro Max", 
                 desc: "請拍攝你自己與芒果樹的合照並上載至Google Form", 
-                url: "https://docs.google.com/forms/d/e/1FAIpQLScXXXXXXXXX/viewform", // 換成你的 Google Form 連結
+                url: "https://docs.google.com/forms/d/e/1FAIpQLSf9LMqvC9gSHjg4H0oHexYyGiyNE_rdfBm2lqJduYfh_fpGKA/viewform?usp=dialog", 
                 password: "2847", 
                 points: 200 
             }
@@ -332,7 +332,7 @@
         let timeLeftSeconds = 20 * 60; 
         let finishedTasksLog = {}; 
         let isProcessingScan = false; 
-        let currentActiveTaskKey = null; // 儲存當前正在進行的任務編號
+        let currentActiveTaskKey = null; 
 
         // --- 1. 頂部實時時鐘功能 ---
         function updateRealTime() {
@@ -359,8 +359,8 @@
             document.getElementById('ready-view').style.display = 'none';
             document.getElementById('scan-view').style.display = 'block';
             
-            startCountdown(); // 啟動時間倒數
-            initCamera();     // 換頁後立刻初始化鏡頭
+            startCountdown(); 
+            initCamera();     
         }
 
         // --- 4. 初始化並開啟相機鏡頭 ---
@@ -389,7 +389,7 @@
             });
         }
 
-        // --- 5. 🧠 判斷與解讀 QR 碼內容（包含防重複、任務跳轉、Reset 重置） ---
+        // --- 5. 🧠 判斷與解讀 QR 碼內容 ---
         function handleScanResult(codeText) {
             if (isProcessingScan) return; 
             
@@ -403,18 +403,17 @@
                 return;
             }
 
-            // 🎯 判定是否為資料庫存在的任務碼 (例如 001)
+            // 🎯 判定任務碼
             if (taskDatabase[lowerCode]) {
                 isProcessingScan = true;
                 
-                // 🛑 防重複限制檢查：如果這個關卡已經解過拿分了，立刻阻擋
+                // 🛑 防重複限制檢查
                 if (finishedTasksLog[lowerCode]) {
                     alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
                     setTimeout(() => { isProcessingScan = false; }, 2000);
                     return;
                 }
 
-                // 🟢 首次進入：載入對應任務數據到畫面上
                 currentActiveTaskKey = lowerCode;
                 const data = taskDatabase[lowerCode];
                 
@@ -422,12 +421,10 @@
                 document.getElementById('task-main-title').innerText = data.title;
                 document.getElementById('task-desc').innerText = data.desc;
                 document.getElementById('task-points-label').innerText = `完成可獲 ${data.points} 分`;
-                document.getElementById('task-password-input').value = ""; // 清空輸入框
+                document.getElementById('task-password-input').value = ""; 
 
-                // 暫時關閉相機鏡頭，節省效能並防止背景誤觸
                 if (html5QrcodeScanner) {
                     html5QrcodeScanner.stop().then(() => {
-                        // 換頁移至關卡畫面
                         document.getElementById('scan-view').style.display = 'none';
                         document.getElementById('task-view').style.display = 'block';
                         isProcessingScan = false;
@@ -437,14 +434,13 @@
                     });
                 }
             } else {
-                // 掃到其他不認得的內容 ➡️ 觸發紅條警告 3 秒
                 isProcessingScan = true;
                 triggerScanFailure();
                 setTimeout(() => { isProcessingScan = false; }, 3000);
             }
         }
 
-        // --- 6. 🔴 掃描失敗反饋（綠條變紅 3 秒） ---
+        // --- 6. 🔴 掃描失敗反饋 ---
         function triggerScanFailure() {
             const bar = document.getElementById('indicator-bar');
             bar.classList.add('error');
@@ -455,46 +451,39 @@
         function openExternalForm() {
             if (!currentActiveTaskKey) return;
             const targetUrl = taskDatabase[currentActiveTaskKey].url;
-            window.open(targetUrl, '_blank'); // 開新分頁避免覆蓋掉遊戲網頁
+            window.open(targetUrl, '_blank'); 
         }
 
-        // --- 8. 🔑 密碼自動即時檢測系統（不需點按鍵，實時比對） ---
+        // --- 8. 🔑 密碼自動即時檢測系統 ---
         function checkPasswordAuto(inputElement) {
             if (!currentActiveTaskKey) return;
             
             const currentCorrectPassword = taskDatabase[currentActiveTaskKey].password;
             const userTyped = inputElement.value.trim();
 
-            // 當玩家輸入與答案完全一致時
             if (userTyped === currentCorrectPassword) {
                 const awardedPoints = taskDatabase[currentActiveTaskKey].points;
                 
-                // 1. 加分
                 currentScore += awardedPoints;
                 const formattedScore = String(currentScore).padStart(4, '0');
                 document.getElementById('display-score').innerText = `積分：${formattedScore}`;
 
-                // 2. 鎖定此關卡防止二刷
                 finishedTasksLog[currentActiveTaskKey] = true;
                 
                 alert(`🎉 密碼解鎖正確！恭喜獲得 ${awardedPoints} 分！`);
                 
-                // 3. 自動返回掃描主畫面
                 backToScan();
             }
         }
 
-        // 從關卡畫面安全回退到掃描畫面
         function backToScan() {
             document.getElementById('task-view').style.display = 'none';
             document.getElementById('scan-view').style.display = 'block';
             currentActiveTaskKey = null;
-            
-            // 重新開啟相機鏡頭繼續掃描
             initCamera();
         }
 
-        // --- 9. 🔄 重置遊戲功能（清空紀錄與分數） ---
+        // --- 9. 🔄 重置遊戲功能 ---
         function resetWholeGame() {
             clearInterval(countdownInterval);
 
@@ -521,7 +510,7 @@
             window.location.reload();
         }
 
-        // --- ⏳ 20 分鐘倒數計時核心功能 ---
+        // --- ⏳ 20 分鐘倒數計時 ---
         function startCountdown() {
             clearInterval(countdownInterval);
             
@@ -544,10 +533,11 @@
                 
                 document.getElementById('ready-clock').innerText = timeStr;
                 document.getElementById('scan-clock').innerText = timeStr;
-                document.getElementById('task-clock').innerText = timeStr; // 卡片內時鐘同步更新
+                document.getElementById('task-clock').innerText = timeStr; 
             }, 1000);
         }
     </script>
 </body>
-  </html>
+</html>
+
   
