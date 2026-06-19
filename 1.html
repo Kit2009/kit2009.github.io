@@ -83,19 +83,24 @@
             streamRef.getTracks().forEach(track => track.stop());
         }
     });
-    
-// 3. 上傳至 GitHub
+
+    // 3. 上傳至 GitHub
     uploadBtn.addEventListener('click', async () => {
-        // ─── 修改此處：直接寫死你的 Token 和 Repo ───
-        const token = "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"; 
-        const repo = "kit2009/kit2009.github.io/test";
-        // ──────────────────────────────────────────
+        const token = document.getElementById('token').value.trim();
+        const repo = document.getElementById('repo').value.trim();
         
+        if (!token || !repo) {
+            alert('請先輸入 GitHub Token 和 儲存庫名稱！');
+            return;
+        }
+
         statusDiv.innerText = "正在處理圖片並上傳...";
         
+        // 將 canvas 轉為 Base64 格式（GitHub API 要求）
         const dataUrl = canvas.toDataURL('image/jpeg');
-        const base64Data = dataUrl.split(',')[1]; // 修正：只取 base64 字串本身
+        const base64Data = dataUrl.split(',')[1];
         
+        // 產生隨檔名，避免檔名重複
         const fileName = `photo_${Date.now()}.jpg`;
         const url = `https://github.com{repo}/contents/${fileName}`;
 
@@ -126,4 +131,7 @@
             statusDiv.innerText = `❌ 網路連線錯誤: ${error.message}`;
         }
     });
-    
+</script>
+
+</body>
+</html>
