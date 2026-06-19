@@ -563,4 +563,237 @@
                     document.getElementById('task4-scanner-box').style.display = "none";
                     document.getElementById('task-password-input').placeholder = "輸入欄";
                 } else if (data.type === "birthday") {
-       
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "block";
+                    document.getElementById('task4-scanner-box').style.display = "none";
+                } else if (data.type === "admin_scan") {
+                    // 🍾 打開 Task 4 專屬內置相機排版
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task4-scanner-box').style.display = "block";
+                }
+
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.stop().then(() => {
+                        document.getElementById('scan-view').style.display = 'none';
+                        document.getElementById('task-view').style.display = 'block';
+                        isProcessingScan = false;
+
+                        // 如果係 Task 4，切換畫面後立刻啟動佢專屬嘅內置相機
+                        if (data.type === "admin_scan") {
+                            initTask4AdminCamera();
+                        }
+                    }).catch(() => { isProcessingScan = false; });
+                }
+            } else {
+                isProcessingScan = true;
+                triggerScanFailure('indicator-bar');
+                setTimeout(() => { isProcessingScan = false; }, 3000);
+            }
+        }
+
+        function triggerScanFailure(barId) {
+            const bar = document.getElementById(barId);
+            if(bar) {
+                bar.classList.add('error');
+                setTimeout(() => { bar.classList.remove('error'); }, 3000);
+            }
+        }
+
+        function openExternalForm() {
+            if (!currentActiveTaskKey) return;
+            const targetUrl = taskDatabase[currentActiveTaskKey].url;
+            if(targetUrl) window.open(targetUrl, '_blank'); 
+        }
+
+        // --- 6. 🍾 Task 4 專屬：初始化並啟動內置 Admin 相機 ---
+        function initTask4AdminCamera() {
+            if (task4QrcodeScanner) {
+                task4QrcodeScanner.start(
+                    { facingMode: "environment" }, 
+                    { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
+                    (decodedText) => { handleAdminScanResult(decodedText.trim()); }, 
+                    () => {}  
+                ).catch(err => console.error(err));
+                return;
+            }
+            task4QrcodeScanner = new Html5Qrcode("task4-reader");
+            task4QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
+                (decodedText) => { handleAdminScanResult(decodedText.trim()); }, 
+                () => {}  
+            ).catch(err => { console.error(err); });
+        }
+
+        // --- 7. 🍾 Task 4 專屬：識別 Admin 條碼邏輯 ---
+        function handleAdminScanResult(codeText) {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            if (data.type !== "admin_scan") return;
+
+            const lowerAdminCode = codeText.toLowerCase();
+
+            // 檢查係咪其中一個指定的 Admin 密碼 (kit / suki)
+            if (data.admins[lowerAdminCode]) {
+                const adminName = data.admins[lowerAdminCode];
+                const points = data.points;
+
+                // 停止 Task 4 相機並返回
+                if (task4QrcodeScanner) {
+                    task4QrcodeScanner.stop().then(() => {
+                        currentScore += points;
+                        document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+                        finishedTasksLog[currentActiveTaskKey] = true; 
+
+                        alert(`🎉 成功通關！由 Admin ${adminName} 幫你加了 ${points} 分！`);
+                        
+                        // 返去主掃描器面
+                        document.getElementById('task-view').style.display = 'none';
+                        document.getElementById('scan-view').style.display = 'block';
+                        currentActiveTaskKey = null;
+                        initCamera();
+                    });
+                }
+            } else {
+                // 掃到錯誤嘅 code 變紅條
+                triggerScanFailure('task4-indicator-bar');
+            }
+        }
+
+        // --- 8. 🔑 密碼比對與 Task 3 功能 ---
+        
+        // (A) Task 1 專用
+        function checkPasswordAuto(inputElement) {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            if (data.type !== "auto") return; 
+            if (inputElement.value.trim() === data.password) {
+                executeTaskSuccess(data.points);
+            }
+        }
+
+        // (B) Task 2 專用
+        function checkPasswordManual() {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            const userTyped = document.getElementById('task-password-input').value.trim();
+            if (userTyped === data.password) {
+                executeTaskSuccess(data.points);
+            } else {
+                alert("❌ 答案不正確，再數一次試試看！");
+            }
+        }
+
+        // (C) Task 3 專用
+        function verifyTask3Progress() {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            if (data.type !== "birthday") return;
+
+            let step1Correct = false;
+            let step2Correct = false;
+            let step3Correct = false;
+
+            const n1 = document.getElementById('t3-name-1').value.trim().toLowerCase();
+            const d1 = document.getElementById('t3-date-1').value.trim();
+            if (n1 === data.answers[0].name.toLowerCase() && d1 === data.answers[0].date) {
+                document.getElementById('t3-line-1').classList.add('correct');
+                step1Correct = true;
+            } else { document.getElementById('t3-line-1').classList.remove('correct'); }
+
+            if (step1Correct) {
+                const n2 = document.getElementById('t3-name-2').value.trim().toLowerCase();
+                const d2 = document.getElementById('t3-date-2').value.trim();
+                if (n2 === data.answers[1].name.toLowerCase() && d2 === data.answers[1].date) {
+                    document.getElementById('t3-line-2').classList.add('correct');
+                    step2Correct = true;
+                } else { document.getElementById('t3-line-2').classList.remove('correct'); }
+            } else { document.getElementById('t3-line-2').classList.remove('correct'); }
+
+            if (step1Correct && step2Correct) {
+                const n3 = document.getElementById('t3-name-3').value.trim().toLowerCase();
+                const d3 = document.getElementById('t3-date-3').value.trim();
+                if (n3 === data.answers[2].name.toLowerCase() && d3 === data.answers[2].date) {
+                    document.getElementById('t3-line-3').classList.add('correct');
+                    step3Correct = true;
+                } else { document.getElementById('t3-line-3').classList.remove('correct'); }
+            } else { document.getElementById('t3-line-3').classList.remove('correct'); }
+
+            if (step1Correct && step2Correct && step3Correct) {
+                setTimeout(() => { executeTaskSuccess(data.points); }, 300);
+            }
+        }
+
+        // 通用成功過關處理
+        function executeTaskSuccess(points) {
+            currentScore += points;
+            document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+            finishedTasksLog[currentActiveTaskKey] = true; 
+            alert(`🎉 恭喜成功通關！獲得 ${points} 分！`);
+            cleanAndBackToScan();
+        }
+
+        // 安全退出並清理關卡鏡頭，重啟主鏡頭
+        function cleanAndBackToScan() {
+            // 先確保熄滅可能開緊嘅 Task 4 鏡頭
+            if (task4QrcodeScanner) {
+                task4QrcodeScanner.stop().catch(() => {});
+            }
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            currentActiveTaskKey = null;
+            initCamera();
+        }
+
+        // --- 9. 重置遊戲 ---
+        function resetWholeGame() {
+            clearInterval(countdownInterval);
+            currentScore = 0;
+            timeLeftSeconds = 20 * 60; 
+            finishedTasksLog = {}; 
+            currentActiveTaskKey = null;
+            
+            document.getElementById('display-score').innerText = `積分：0000`;
+            document.getElementById('ready-clock').innerText = "00:20:00";
+            document.getElementById('scan-clock').innerText = "00:20:00";
+            document.getElementById('task-clock').innerText = "00:20:00";
+
+            alert("🔄 所有積分、計時以及任務紀錄已全部重置！");
+            document.getElementById('scan-view').style.display = 'none';
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('ready-view').style.block;
+            
+            if (html5QrcodeScanner) { html5QrcodeScanner.stop().catch(() => {}); }
+            if (task4QrcodeScanner) { task4QrcodeScanner.stop().catch(() => {}); }
+            window.location.reload();
+        }
+
+        // --- 10. 倒數計時計時器 ---
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                if (timeLeftSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    alert("遊戲時間到！");
+                    return;
+                }
+                timeLeftSeconds--;
+                
+                const hrs = String(Math.floor(timeLeftSeconds / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((timeLeftSeconds % 3600) / 60)).padStart(2, '0');
+                const secs = String(timeLeftSeconds % 60).padStart(2, '0');
+                const timeStr = `${hrs}:${mins}:${secs}`;
+                
+                document.getElementById('ready-clock').innerText = timeStr;
+                document.getElementById('scan-clock').innerText = timeStr;
+                document.getElementById('task-clock').innerText = timeStr; 
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
