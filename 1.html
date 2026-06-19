@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 相機上傳器</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f4f4f9; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        video, canvas { width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px; display: none; }
+        input, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #status { margin-top: 15px; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📸 GitHub 拍照上傳器</h2>
+    
+    <!-- 設定區域 -->
+    <input type="password" id="token" placeholder="請貼上你的 GitHub Token (classic)">
+    <input type="text" id="repo" placeholder="格式：用戶名/儲存庫名 (例如: peter/peter.github.io)">
+    
+    <hr>
+    
+    <!-- 相機與控制按鈕 -->
+    <button id="startCam">開啟相機</button>
+    <video id="video" autoplay playsinline></video>
+    <button id="snap" style="display:none; background:#28a745;">📷 拍照</button>
+    
+    <canvas id="canvas"></canvas>
+    <button id="upload" style="display:none; background:#dc3545;">📤 上傳至 GitHub</button>
+    
+    <div id="status"></div>
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const snapBtn = document.getElementById('snap');
+    const uploadBtn = document.getElementById('upload');
+    const startCamBtn = document.getElementById('startCam');
+    const statusDiv = document.getElementById('status');
+    let streamRef = null;
+
+    // 1. 開啟相機
+    startCamBtn.addEventListener('click', async () => {
+        try {
+            statusDiv.innerText = "正在啟動相機...";
+            streamRef = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+            video.srcObject = streamRef;
+            video.style.display = 'block';
+            snapBtn.style.display = 'block';
+            startCamBtn.style.display = 'none';
+            canvas.style.display = 'none';
+            uploadBtn.style.display = 'none';
+            statusDiv.innerText = "相機已就緒";
+        } catch (err) {
+            statusDiv.innerText = "無法開啟相機，請檢查權限或網址是否為 https";
+            console.error(err);
+        }
+    });
+
+    // 2. 拍照截圖
+    snapBtn.addEventListener('click', () => {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // 顯示照片，隱藏鏡頭
+        canvas.style.display = 'block';
+        uploadBtn.style.display = 'block';
+        video.style.display = 'none';
+        snapBtn.style.display = 'none';
+        startCamBtn.style.display = 'block';
+        startCamBtn.innerText = "重新拍照";
+        
+        // 關閉鏡頭串流省電
+        if(streamRef) {
+            streamRef.getTracks().forEach(track => track.stop());
+        }
+    });
+
+    // 3. 上傳至 GitHub
+    uploadBtn.addEventListener('click', async () => {
+        const token = document.getElementById('token').value.trim();
+        const repo = document.getElementById('repo').value.trim();
+        
+        if (!token || !repo) {
+            alert('請先輸入 GitHub Token 和 儲存庫名稱！');
+            return;
+        }
+
+        statusDiv.innerText = "正在處理圖片並上傳...";
+        
+        // 將 canvas 轉為 Base64 格式（GitHub API 要求）
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        const base64Data = dataUrl.split(',')[1];
+        
+        // 產生隨檔名，避免檔名重複
+        const fileName = `photo_${Date.now()}.jpg`;
+        const url = `https://github.com{repo}/contents/${fileName}`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Upload photo via web camera`,
+                    content: base64Data
+                })
+            });
+
+            if (response.ok) {
+                statusDiv.style.color = "green";
+                statusDiv.innerText = `🎉 上傳成功！檔案名稱: ${fileName}`;
+                uploadBtn.style.display = 'none';
+            } else {
+                const errData = await response.json();
+                statusDiv.style.color = "red";
+                statusDiv.innerText = `❌ 上傳失敗: ${errData.message}`;
+            }
+        } catch (error) {
+            statusDiv.style.color = "red";
+            statusDiv.innerText = `❌ 網路連線錯誤: ${error.message}`;
+        }
+    });
+</script>
+
+</body>
+</html>
