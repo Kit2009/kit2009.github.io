@@ -6,7 +6,6 @@
     <title>實境冒險遊戲</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* 全域重設與字型設定 */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -21,7 +20,6 @@
             background-color: #f7f4eb;
         }
 
-        /* 全螢幕背景圖設定 */
         .bg-container {
             position: fixed;
             top: 0;
@@ -91,13 +89,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 畫面切換控制開關 */
+        /* 畫面切換控制 */
         #home-view { display: block; }
         #ready-view { display: none; }
         #scan-view { display: none; }
-        #task-view { display: none; }
 
-        /* 卡片內通用標題 */
         .card h2 {
             color: #111111;
             font-size: 24px;
@@ -105,7 +101,6 @@
             margin-bottom: 25px;
         }
 
-        /* 輸入框通用樣式 */
         .input-field {
             width: 100%;
             height: 54px;
@@ -142,31 +137,7 @@
             box-shadow: 0 6px 15px rgba(31, 129, 149, 0.3);
         }
 
-        /* Task 頁面專屬：粉紫色上載按鈕 */
-        .btn-upload {
-            background-color: #e2a4f4;
-            color: #000000;
-            box-shadow: 0 6px 15px rgba(226, 164, 244, 0.4);
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 35px;
-        }
-
-        /* 返回掃描紅橘色小按鈕 */
-        .btn-back {
-            display: inline-block;
-            width: auto;
-            height: auto;
-            padding: 8px 18px;
-            background-color: #ff6b6b;
-            color: #ffffff;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 20px;
-            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
-        }
-
-        .btn:active, .btn-back:active {
+        .btn:active {
             transform: scale(0.97);
         }
 
@@ -197,11 +168,11 @@
             box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
         }
 
-        /* 隱藏 html5-qrcode 內部自帶的預設控制按鈕與圖片 */
+        /* 隱藏 html5-qrcode 內部自帶的元件 */
         #reader button { display: none; }
         #reader img { display: none; }
 
-        /* 🟢🔴 下方動態長條（狀態提示條） */
+        /* 🟢🔴 下方動態長條 */
         .status-bar {
             width: 100%;
             height: 10px;
@@ -211,49 +182,8 @@
             transition: background-color 0.3s ease;
         }
 
-        /* 錯誤/失敗狀態下轉變為紅色 */
         .status-bar.error {
-            background-color: #d93838;
-        }
-
-        /* --- Task 關卡內容排版樣式 --- */
-        .task-header {
-            text-align: left;
-            color: #1f8195;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .task-title {
-            text-align: left;
-            color: #1f8195;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 25px;
-        }
-
-        .task-description {
-            text-align: left;
-            color: #1f8195;
-            font-size: 18px;
-            font-weight: bold;
-            line-height: 1.5;
-            margin-bottom: 30px;
-        }
-
-        .task-footer-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .points-award {
-            color: #1f8195;
-            font-size: 18px;
-            font-weight: bold;
+            background-color: #d93838; /* 失敗變紅色 */
         }
     </style>
 </head>
@@ -279,13 +209,13 @@
 
             <div id="ready-view" class="card">
                 <div class="timer-label">尚餘時間</div>
-                <div class="timer-display">00:20:00</div>
+                <div class="timer-display" id="ready-clock">00:20:00</div>
                 <button class="btn" onclick="startGameClock()">開始遊戲</button>
             </div>
 
             <div id="scan-view" class="card">
                 <div class="timer-label">尚餘時間</div>
-                <div class="timer-display" class="sync-clock">00:20:00</div>
+                <div class="timer-display" id="scan-clock">00:20:00</div>
                 
                 <div class="scanner-box" id="reader"></div>
                 
@@ -294,43 +224,19 @@
                 <button class="btn btn-blue" onclick="triggerScan()">掃 描</button>
             </div>
 
-            <div id="task-view" class="card">
-                <div class="timer-label">尚餘時間</div>
-                <div class="timer-display" class="sync-clock">00:20:00</div>
-                
-                <div class="task-header" id="task-id-label">Task 1</div>
-                <div class="task-title" id="task-main-title">攝影 Pro Max</div>
-                <div class="task-description" id="task-desc">請拍攝你自己與芒果樹的合照並上載至Google Form</div>
-                
-                <button class="btn btn-upload" id="task-upload-url" onclick="openExternalForm()">上 載</button>
-                <input type="text" id="task-password-input" class="input-field" placeholder="輸入密碼" oninput="checkPasswordAuto(this)" autocomplete="off">
-                
-                <div class="task-footer-info">
-                    <div class="points-award" id="task-points-label">完成可獲 200 分</div>
-                    <button class="btn-back" onclick="backToScan()">返回掃描</button>
-                </div>
-            </div>
-
         </div>
     </div>
 
     <script>
-        // --- 1. 遊戲關卡數據設定 ---
-        const taskDatabase = {
-            "001": { id: "Task 1", title: "攝影 Pro Max", desc: "請拍攝你自己與芒果樹的合照並上載至Google Form", url: "https://forms.google.com", password: "2847", points: 200 },
-            "002": { id: "Task 2", title: "尋找神秘寶藏", desc: "請在基地周圍找出印有金色條碼的道具箱。", url: "https://forms.google.com", password: "1234", points: 300 },
-            "003": { id: "Task 3", title: "終極機密解碼", desc: "破解黑板上的加密摩斯密碼，並提交報告。", url: "https://forms.google.com", password: "9999", points: 500 }
-        };
-
-        // 系統變數紀錄器
         let currentScore = 0;
-        let finishedTasks = {}; 
         let html5QrcodeScanner = null;
         let countdownInterval = null;
-        let currentActiveTaskKey = null; 
-        let timeLeftSeconds = 20 * 60; // 預設 20 分鐘
+        let timeLeftSeconds = 20 * 60; // 20 分鐘 = 1200 秒
 
-        // --- 2. 頂部實時時鐘功能 ---
+        // ⭐ 新增：用來紀錄已經被成功挑戰過、拿過分數嘅任務清單 (防重複限制)
+        let finishedTasksLog = {}; 
+
+        // --- 1. 頂部實時時鐘功能 ---
         function updateRealTime() {
             const now = new Date();
             document.getElementById('real-time').innerText = 
@@ -339,7 +245,7 @@
         setInterval(updateRealTime, 1000);
         updateRealTime();
 
-        // --- 3. 畫面一：玩家登入邏輯 ---
+        // --- 2. 畫面一：玩家登入邏輯 ---
         function loginGame() {
             const name = document.getElementById('player-name').value.trim();
             if (!name) return alert("請輸入名字！");
@@ -350,194 +256,141 @@
             document.getElementById('ready-view').style.display = 'block';
         }
 
-        // --- 4. 畫面二：正式點擊「開始遊戲」 ---
+        // --- 3. 畫面二：點擊「開始遊戲」，立刻開展倒數計時並換頁 ---
         function startGameClock() {
-            // 先強制換頁與啟動計時器，確保畫面功能不卡死
             document.getElementById('ready-view').style.display = 'none';
             document.getElementById('scan-view').style.display = 'block';
             
-            startCountdown(); // 1. 先開啟計時器 (現在百分之百會動了)
-            
-            // 2. 包裹在 try/catch 內喚醒手機鏡頭，防止鏡頭出錯影響全局
-            try {
-                initCamera();     
-            } catch (e) {
-                console.error("初始化鏡頭時發生嚴重錯誤:", e);
-            }
+            startCountdown(); // 啟動時間倒數
+            initCamera();       // 換頁後立刻初始化鏡頭
         }
 
-        // --- 5. 初始化並開啟後置相機預覽 ---
+        // --- 4. 初始化並開啟相機鏡頭 ---
         function initCamera() {
             html5QrcodeScanner = new Html5Qrcode("reader");
             html5QrcodeScanner.start(
                 { facingMode: "environment" }, 
-                { fps: 10, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
-                () => {}, // 忽略自動偵測，我們改用按鈕手動捕捉
+                { fps: 10, qrbox: (w, h) => ({ width: w * 0.7, height: h * 0.7 }) },
+                () => {}, 
                 () => {}  
             ).catch(err => {
-                console.error("相機開啟失敗: ", err);
-                alert("【重要提示】請確保網頁使用的是 HTTPS 網址，並允許相機權限，否則黑色方格將無法顯示相機畫面！");
+                console.error("相機無法正常開啟: ", err);
+                alert("請允許網頁存取相機權限！並確保網址使用的是 https 連線！");
             });
         }
 
-        // --- 6. 畫面三：按下「掃描」按鈕後單幀圖像捕捉解碼 ---
+        // --- 5. 畫面三：按下「掃描」按鈕後單幀圖像捕捉解碼 ---
         function triggerScan() {
-            if (!html5QrcodeScanner) {
-                alert("相機未就緒，無法進行掃描！");
-                return;
-            }
+            if (!html5QrcodeScanner) return;
             
             let isDecoded = false;
-            let attemptCount = 0;
-            
             let checkScan = setInterval(() => {
                 const video = document.querySelector("#reader video");
-                if (!video || isDecoded || attemptCount > 15) {
-                    clearInterval(checkScan);
-                    if (!isDecoded) triggerScanFailure(); // 超時判定失敗
-                    return;
-                }
+                if (!video) return clearInterval(checkScan);
 
-                attemptCount++;
-                
-                // 抓取當前鏡頭影格交給套件去 decode
+                // 捕捉畫面進行解碼
                 html5QrcodeScanner.scanFile(captureVideoFrame(video))
                     .then(decodedText => {
-                        if (!isDecoded) {
-                            isDecoded = true;
-                            clearInterval(checkScan);
-                            handleScanResult(decodedText.trim()); // 成功解碼，去判斷內容
-                        }
+                        clearInterval(checkScan);
+                        isDecoded = true;
+                        handleScanResult(decodedText.trim()); // 進入解讀邏輯
                     })
-                    .catch(() => {
-                        // 這一格影像解不出就跳過，等待下一格
-                    });
+                    .catch(() => {});
             }, 100);
+
+            // 1.5 秒後如果還沒解開，就判定為掃描失敗
+            setTimeout(() => {
+                clearInterval(checkScan);
+                if (!isDecoded) {
+                    triggerScanFailure(); // 紅條警告 3 秒
+                }
+            }, 1500);
         }
 
         function captureVideoFrame(video) {
             const canvas = document.createElement("canvas");
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
             return canvas;
         }
 
-        // --- 7. 解讀條碼內容（含重置碼與防重做限制） ---
+        // --- 6. 🧠 判斷與解讀 QR 碼內容（含防重複限制及重置機制） ---
         function handleScanResult(codeText) {
-            console.log("掃描到的條碼內容為:", codeText);
+            const lowerCode = codeText.toLowerCase();
 
-            // 重置功能
-            if (codeText.toLowerCase() === 'reset') {
+            // 🔄 重置指令判定
+            if (lowerCode === 'reset') {
                 resetWholeGame();
                 return;
             }
 
-            // 比對資料庫
-            if (taskDatabase[codeText]) {
+            // 🎯 模擬關卡任務碼判定 (001, 002, 003)
+            if (lowerCode === '001' || lowerCode === '002' || lowerCode === '003') {
                 
-                // 防重複刷分限制
-                if (finishedTasks[codeText]) {
+                // 🛑 核心防重複限制檢查：如果這個碼已經存在於紀錄 log 入面
+                if (finishedTasksLog[lowerCode]) {
                     alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
-                    return;
+                    return; // 直接攔截攔阻，不給予任何獎勵與換頁
                 }
 
-                // 未做過則導入關卡頁面，加載對應數據
-                currentActiveTaskKey = codeText;
-                const data = taskDatabase[codeText];
+                // 🟢 首次解鎖成功：登錄 log 鎖定此關卡防止二刷
+                finishedTasksLog[lowerCode] = true;
                 
-                document.getElementById('task-id-label').innerText = data.id;
-                document.getElementById('task-main-title').innerText = data.title;
-                document.getElementById('task-desc').innerText = data.desc;
-                document.getElementById('task-points-label').innerText = `完成可獲 ${data.points} 分`;
-                document.getElementById('task-password-input').value = ""; // 清空輸入框
-
-                // 換頁顯示 Task 內容
-                document.getElementById('scan-view').style.display = 'none';
-                document.getElementById('task-view').style.display = 'block';
+                // 模擬關卡完成加分：每次加 200 分
+                currentScore += 200;
+                const formattedScore = String(currentScore).padStart(4, '0');
+                document.getElementById('display-score').innerText = `積分：${formattedScore}`;
+                
+                alert(`🎉 成功識別條碼 [${codeText}]！\n防重複挑戰鎖定已開啟，恭喜獲得 200 分！`);
                 
             } else {
-                // 條碼不在資料庫中
+                // 掃到其他任何不認得的內容，直接判定失敗紅條
                 triggerScanFailure();
             }
         }
 
-        // --- 8. 🔴 條碼掃描失敗反饋（綠條變紅 3 秒） ---
+        // --- 7. 🔴 掃描失敗反饋（綠條變紅 3 秒） ---
         function triggerScanFailure() {
             const bar = document.getElementById('indicator-bar');
             bar.classList.add('error');
             setTimeout(() => { bar.classList.remove('error'); }, 3000);
         }
 
-        // --- 9. Task 頁面功能：點擊上載按鈕跳轉至 Google 表單 ---
-        function openExternalForm() {
-            if (!currentActiveTaskKey) return;
-            const targetUrl = taskDatabase[currentActiveTaskKey].url;
-            window.open(targetUrl, '_blank'); 
-        }
-
-        // --- 10. 密碼自動即時檢測系統 ---
-        function checkPasswordAuto(inputElement) {
-            if (!currentActiveTaskKey) return;
-            
-            const currentCorrectPassword = taskDatabase[currentActiveTaskKey].password;
-            const userTyped = inputElement.value.trim();
-
-            if (userTyped === currentCorrectPassword) {
-                const awardedPoints = taskDatabase[currentActiveTaskKey].points;
-                
-                currentScore += awardedPoints;
-                updateScoreDisplay();
-
-                // 紀錄完成
-                finishedTasks[currentActiveTaskKey] = true;
-                
-                alert(`🎉 密碼解鎖正確！恭喜獲得 ${awardedPoints} 分！`);
-                backToScan();
-            }
-        }
-
-        function updateScoreDisplay() {
-            const formattedScore = String(currentScore).padStart(4, '0');
-            document.getElementById('display-score').innerText = `積分：${formattedScore}`;
-        }
-
-        function backToScan() {
-            document.getElementById('task-view').style.display = 'none';
-            document.getElementById('scan-view').style.display = 'block';
-            currentActiveTaskKey = null;
-        }
-
-        // --- 11. 『reset』重置功能 ---
+        // --- 8. 🔄 重置遊戲功能（清空紀錄與分數） ---
         function resetWholeGame() {
             clearInterval(countdownInterval);
 
+            // 還原狀態
             currentScore = 0;
-            finishedTasks = {};
-            currentActiveTaskKey = null;
             timeLeftSeconds = 20 * 60; 
+            finishedTasksLog = {}; // ⭐ 徹底清空防重複鎖定的紀錄，任務可以重新刷
+            
+            document.getElementById('display-score').innerText = `積分：0000`;
+            document.getElementById('ready-clock').innerText = "00:20:00";
+            document.getElementById('scan-clock').innerText = "00:20:00";
 
-            updateScoreDisplay();
-            document.querySelectorAll('.sync-clock').forEach(el => el.innerText = "00:20:00");
-            document.querySelector('#ready-view .timer-display').innerText = "00:20:00";
+            alert("🔄 檢測到 Reset 管理員指令：所有積分、計時以及任務完成紀錄已全部重置！");
 
-            alert("🔄 檢測到重置代碼！所有遊戲積分、關卡進度與計時器已回歸初始狀態。");
-
+            // 回到畫面二
             document.getElementById('scan-view').style.display = 'none';
-            document.getElementById('task-view').style.display = 'none';
             document.getElementById('ready-view').style.display = 'block';
+            
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(() => {});
+            }
         }
 
-        // --- ⏳ 20 分鐘計時器核心核心邏輯 ---
+        // --- ⏳ 20 分鐘倒數計時核心功能 ---
         function startCountdown() {
-            clearInterval(countdownInterval); // 清除舊計時
+            clearInterval(countdownInterval);
             
             countdownInterval = setInterval(() => {
                 if (timeLeftSeconds <= 0) {
                     clearInterval(countdownInterval);
-                    document.querySelectorAll('.sync-clock').forEach(el => el.innerText = "00:00:00");
-                    alert("🚨 遊戲時間終了！時間到！");
+                    document.getElementById('ready-clock').innerText = "00:00:00";
+                    document.getElementById('scan-clock').innerText = "00:00:00";
+                    alert("遊戲時間到！");
                     return;
                 }
                 timeLeftSeconds--;
@@ -547,10 +400,12 @@
                 const secs = String(timeLeftSeconds % 60).padStart(2, '0');
                 
                 const timeStr = `${hrs}:${mins}:${secs}`;
-                // 同步更新網頁上所有帶有 .sync-clock 類別的計時器文字
-                document.querySelectorAll('.sync-clock').forEach(el => el.innerText = timeStr);
+                
+                document.getElementById('ready-clock').innerText = timeStr;
+                document.getElementById('scan-clock').innerText = timeStr;
             }, 1000);
         }
     </script>
 </body>
 </html>
+
