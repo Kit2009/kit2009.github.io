@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>實境冒險遊戲</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        /* 全域重設與字型設定 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f7f4eb;
+        }
+
+        /* 全螢幕背景圖設定 */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('bg.png'); /* 請確保背景圖片名稱為 bg.png */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部深藍綠色實時時間狀態欄 */
+        .top-time-bar {
+            background-color: #1f8195;
+            color: #ffffff;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* 玩家資訊與積分狀態列 */
+        .info-bar {
+            background-color: #f4efe2;
+            color: #111111;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        /* 主要卡片容器 */
+        .content-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 半透明淡青綠色圓角卡片 */
+        .card {
+            background-color: rgba(225, 241, 239, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 35px 25px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 畫面切換控制開關 */
+        #home-view { display: block; }
+        #ready-view { display: none; }
+        #scan-view { display: none; }
+        #task-view { display: none; }
+
+        /* 卡片內通用標題 */
+        .card h2 {
+            color: #111111;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        /* 輸入框通用樣式 */
+        .input-field {
+            width: 100%;
+            height: 54px;
+            border: none;
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 0 20px;
+            font-size: 18px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+            outline: none;
+            margin-bottom: 30px;
+        }
+
+        /* 經典綠色大按鈕 */
+        .btn {
+            width: 100%;
+            height: 56px;
+            border: none;
+            background-color: #00a854;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 168, 84, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        /* 掃描介面的藍綠色按鈕 */
+        .btn-blue {
+            background-color: #1f8195;
+            box-shadow: 0 6px 15px rgba(31, 129, 149, 0.3);
+        }
+
+        /* Task 頁面專屬：粉紫色上載按鈕 */
+        .btn-upload {
+            background-color: #e2a4f4;
+            color: #000000;
+            box-shadow: 0 6px 15px rgba(226, 164, 244, 0.4);
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 35px;
+        }
+
+        /* 返回掃描紅橘色小按鈕 */
+        .btn-back {
+            display: inline-block;
+            width: auto;
+            height: auto;
+            padding: 8px 18px;
+            background-color: #ff6b6b;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn:active, .btn-back:active {
+            transform: scale(0.97);
+        }
+
+        /* 倒數計時器排版 */
+        .timer-label {
+            color: #1f8195;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .timer-display {
+            color: #1f8195;
+            font-size: 46px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        /* 📷 相機正方形黑色框 */
+        .scanner-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #000000;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 0 auto 25px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+        }
+
+        /* 隱藏 html5-qrcode 內部自帶的預設控制按鈕與圖片 */
+        #reader button { display: none; }
+        #reader img { display: none; }
+
+        /* 🟢🔴 下方動態長條（狀態提示條） */
+        .status-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #00a854; /* 預設綠色 */
+            border-radius: 5px;
+            margin-bottom: 25px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 錯誤/失敗狀態下轉變為紅色 */
+        .status-bar.error {
+            background-color: #d93838;
+        }
+
+        /* --- Task 關卡內容排版樣式 --- */
+        .task-header {
+            text-align: left;
+            color: #1f8195;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .task-title {
+            text-align: left;
+            color: #1f8195;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .task-description {
+            text-align: left;
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        .task-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .points-award {
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        
+        <div id="global-header" style="display: none;">
+            <div class="top-time-bar" id="real-time">00:00:00</div>
+            <div class="info-bar">
+                <div id="display-player-name">玩家名稱</div>
+                <div id="display-score">積分：0000</div>
+            </div>
+        </div>
+
+        <div class="content-body">
+
+            <div id="home-view" class="card">
+                <h2>玩家名稱</h2>
+                <input type="text" id="player-name" class="input-field" placeholder="請輸入名字..." autocomplete="off">
+                <button class="btn" onclick="loginGame()">登入遊戲</button>
+            </div>
+
+            <div id="ready-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display">00:20:00</div>
+                <button class="btn" onclick="startGameClock()">開始遊戲</button>
+            </div>
+
+            <div id="scan-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" class="sync-clock">00:20:00</div>
+                
+                <div class="scanner-box" id="reader"></div>
+                
+                <div class="status-bar" id="indicator-bar"></div>
+                
+                <button class="btn btn-blue" onclick="triggerScan()">掃 描</button>
+            </div>
+
+            <div id="task-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" class="sync-clock">00:20:00</div>
+                
+                <div class="task-header" id="task-id-label">Task 1</div>
+                <div class="task-title" id="task-main-title">攝影 Pro Max</div>
+                <div class="task-description" id="task-desc">請拍攝你自己與芒果樹的合照並上載至Google Form</div>
+                
+                <button class="btn btn-upload" id="task-upload-url" onclick="openExternalForm()">上 載</button>
+                <input type="text" id="task-password-input" class="input-field" placeholder="輸入密碼" oninput="checkPasswordAuto(this)" autocomplete="off">
+                
+                <div class="task-footer-info">
+                    <div class="points-award" id="task-points-label">完成可獲 200 分</div>
+                    <button class="btn-back" onclick="backToScan()">返回掃描</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 遊戲關卡數據設定 ---
+        const taskDatabase = {
+            "001": { id: "Task 1", title: "攝影 Pro Max", desc: "請拍攝你自己與芒果樹的合照並上載至Google Form", url: "https://forms.google.com", password: "2847", points: 200 },
+            "002": { id: "Task 2", title: "尋找神秘寶藏", desc: "請在基地周圍找出印有金色條碼的道具箱。", url: "https://forms.google.com", password: "1234", points: 300 },
+            "003": { id: "Task 3", title: "終極機密解碼", desc: "破解黑板上的加密摩斯密碼，並提交報告。", url: "https://forms.google.com", password: "9999", points: 500 }
+        };
+
+        // 系統變數紀錄器
+        let currentScore = 0;
+        let finishedTasks = {}; 
+        let html5QrcodeScanner = null;
+        let countdownInterval = null;
+        let currentActiveTaskKey = null; 
+        let timeLeftSeconds = 20 * 60; // 預設 20 分鐘
+
+        // --- 2. 頂部實時時鐘功能 ---
+        function updateRealTime() {
+            const now = new Date();
+            document.getElementById('real-time').innerText = 
+                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+        setInterval(updateRealTime, 1000);
+        updateRealTime();
+
+        // --- 3. 畫面一：玩家登入邏輯 ---
+        function loginGame() {
+            const name = document.getElementById('player-name').value.trim();
+            if (!name) return alert("請輸入名字！");
+            
+            document.getElementById('display-player-name').innerText = name;
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('global-header').style.display = 'block';
+            document.getElementById('ready-view').style.display = 'block';
+        }
+
+        // --- 4. 畫面二：正式點擊「開始遊戲」 ---
+        function startGameClock() {
+            // 先強制換頁與啟動計時器，確保畫面功能不卡死
+            document.getElementById('ready-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            
+            startCountdown(); // 1. 先開啟計時器 (現在百分之百會動了)
+            
+            // 2. 包裹在 try/catch 內喚醒手機鏡頭，防止鏡頭出錯影響全局
+            try {
+                initCamera();     
+            } catch (e) {
+                console.error("初始化鏡頭時發生嚴重錯誤:", e);
+            }
+        }
+
+        // --- 5. 初始化並開啟後置相機預覽 ---
+        function initCamera() {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) },
+                () => {}, // 忽略自動偵測，我們改用按鈕手動捕捉
+                () => {}  
+            ).catch(err => {
+                console.error("相機開啟失敗: ", err);
+                alert("【重要提示】請確保網頁使用的是 HTTPS 網址，並允許相機權限，否則黑色方格將無法顯示相機畫面！");
+            });
+        }
+
+        // --- 6. 畫面三：按下「掃描」按鈕後單幀圖像捕捉解碼 ---
+        function triggerScan() {
+            if (!html5QrcodeScanner) {
+                alert("相機未就緒，無法進行掃描！");
+                return;
+            }
+            
+            let isDecoded = false;
+            let attemptCount = 0;
+            
+            let checkScan = setInterval(() => {
+                const video = document.querySelector("#reader video");
+                if (!video || isDecoded || attemptCount > 15) {
+                    clearInterval(checkScan);
+                    if (!isDecoded) triggerScanFailure(); // 超時判定失敗
+                    return;
+                }
+
+                attemptCount++;
+                
+                // 抓取當前鏡頭影格交給套件去 decode
+                html5QrcodeScanner.scanFile(captureVideoFrame(video))
+                    .then(decodedText => {
+                        if (!isDecoded) {
+                            isDecoded = true;
+                            clearInterval(checkScan);
+                            handleScanResult(decodedText.trim()); // 成功解碼，去判斷內容
+                        }
+                    })
+                    .catch(() => {
+                        // 這一格影像解不出就跳過，等待下一格
+                    });
+            }, 100);
+        }
+
+        function captureVideoFrame(video) {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas;
+        }
+
+        // --- 7. 解讀條碼內容（含重置碼與防重做限制） ---
+        function handleScanResult(codeText) {
+            console.log("掃描到的條碼內容為:", codeText);
+
+            // 重置功能
+            if (codeText.toLowerCase() === 'reset') {
+                resetWholeGame();
+                return;
+            }
+
+            // 比對資料庫
+            if (taskDatabase[codeText]) {
+                
+                // 防重複刷分限制
+                if (finishedTasks[codeText]) {
+                    alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
+                    return;
+                }
+
+                // 未做過則導入關卡頁面，加載對應數據
+                currentActiveTaskKey = codeText;
+                const data = taskDatabase[codeText];
+                
+                document.getElementById('task-id-label').innerText = data.id;
+                document.getElementById('task-main-title').innerText = data.title;
+                document.getElementById('task-desc').innerText = data.desc;
+                document.getElementById('task-points-label').innerText = `完成可獲 ${data.points} 分`;
+                document.getElementById('task-password-input').value = ""; // 清空輸入框
+
+                // 換頁顯示 Task 內容
+                document.getElementById('scan-view').style.display = 'none';
+                document.getElementById('task-view').style.display = 'block';
+                
+            } else {
+                // 條碼不在資料庫中
+                triggerScanFailure();
+            }
+        }
+
+        // --- 8. 🔴 條碼掃描失敗反饋（綠條變紅 3 秒） ---
+        function triggerScanFailure() {
+            const bar = document.getElementById('indicator-bar');
+            bar.classList.add('error');
+            setTimeout(() => { bar.classList.remove('error'); }, 3000);
+        }
+
+        // --- 9. Task 頁面功能：點擊上載按鈕跳轉至 Google 表單 ---
+        function openExternalForm() {
+            if (!currentActiveTaskKey) return;
+            const targetUrl = taskDatabase[currentActiveTaskKey].url;
+            window.open(targetUrl, '_blank'); 
+        }
+
+        // --- 10. 密碼自動即時檢測系統 ---
+        function checkPasswordAuto(inputElement) {
+            if (!currentActiveTaskKey) return;
+            
+            const currentCorrectPassword = taskDatabase[currentActiveTaskKey].password;
+            const userTyped = inputElement.value.trim();
+
+            if (userTyped === currentCorrectPassword) {
+                const awardedPoints = taskDatabase[currentActiveTaskKey].points;
+                
+                currentScore += awardedPoints;
+                updateScoreDisplay();
+
+                // 紀錄完成
+                finishedTasks[currentActiveTaskKey] = true;
+                
+                alert(`🎉 密碼解鎖正確！恭喜獲得 ${awardedPoints} 分！`);
+                backToScan();
+            }
+        }
+
+        function updateScoreDisplay() {
+            const formattedScore = String(currentScore).padStart(4, '0');
+            document.getElementById('display-score').innerText = `積分：${formattedScore}`;
+        }
+
+        function backToScan() {
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            currentActiveTaskKey = null;
+        }
+
+        // --- 11. 『reset』重置功能 ---
+        function resetWholeGame() {
+            clearInterval(countdownInterval);
+
+            currentScore = 0;
+            finishedTasks = {};
+            currentActiveTaskKey = null;
+            timeLeftSeconds = 20 * 60; 
+
+            updateScoreDisplay();
+            document.querySelectorAll('.sync-clock').forEach(el => el.innerText = "00:20:00");
+            document.querySelector('#ready-view .timer-display').innerText = "00:20:00";
+
+            alert("🔄 檢測到重置代碼！所有遊戲積分、關卡進度與計時器已回歸初始狀態。");
+
+            document.getElementById('scan-view').style.display = 'none';
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('ready-view').style.display = 'block';
+        }
+
+        // --- ⏳ 20 分鐘計時器核心核心邏輯 ---
+        function startCountdown() {
+            clearInterval(countdownInterval); // 清除舊計時
+            
+            countdownInterval = setInterval(() => {
+                if (timeLeftSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    document.querySelectorAll('.sync-clock').forEach(el => el.innerText = "00:00:00");
+                    alert("🚨 遊戲時間終了！時間到！");
+                    return;
+                }
+                timeLeftSeconds--;
+                
+                const hrs = String(Math.floor(timeLeftSeconds / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((timeLeftSeconds % 3600) / 60)).padStart(2, '0');
+                const secs = String(timeLeftSeconds % 60).padStart(2, '0');
+                
+                const timeStr = `${hrs}:${mins}:${secs}`;
+                // 同步更新網頁上所有帶有 .sync-clock 類別的計時器文字
+                document.querySelectorAll('.sync-clock').forEach(el => el.innerText = timeStr);
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
