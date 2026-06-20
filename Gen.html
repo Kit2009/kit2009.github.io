@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code 生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        #qrcode {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 128px; /* 預留空間給 QR Code */
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="qrcode"></div>
+
+    <input type="text" id="text-input" placeholder="請輸入文字或網址...">
+    <br>
+    <button onclick="generateQRCode()">提交</button>
+</div>
+
+<script>
+    // 初始化 QR Code 物件
+    var qrcode = new QRCode(document.getElementById("qrcode"), {
+        width: 128,
+        height: 128
+    });
+
+    function generateQRCode() {
+        // 獲取文字框的內容
+        var inputText = document.getElementById("text-input").value;
+        
+        if (inputText.trim() === "") {
+            alert("請先輸入一些文字！");
+            return;
+        }
+        
+        // 清除舊的 QR Code 並生成新的
+        qrcode.clear();
+        qrcode.makeCode(inputText);
+    }
+</script>
+
+</body>
+</html>
