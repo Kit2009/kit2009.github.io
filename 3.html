@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deadline Fligher</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f7f4eb;
+        }
+
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('bg.png'); /* 請確保背景圖片名稱為 bg.png */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部深藍綠色實時時間狀態欄 */
+        .top-time-bar {
+            background-color: #1f8195;
+            color: #ffffff;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* 玩家資訊與積分狀態列 */
+        .info-bar {
+            background-color: #f4efe2;
+            color: #111111;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        /* 主要卡片容器 */
+        .content-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* 半透明淡青綠色圓角卡片 */
+        .card {
+            background-color: rgba(225, 241, 239, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 35px 25px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 畫面切換控制 */
+        #home-view { display: block; }
+        #ready-view { display: none; }
+        #scan-view { display: none; }
+        #task-view { display: none; }
+        #end-view { display: none; }
+        #admin-panel-view { display: none; }
+
+        .card h2 {
+            color: #111111;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .input-field {
+            width: 100%;
+            height: 54px;
+            border: none;
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 0 20px;
+            font-size: 18px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        /* Admin 欄位排版調校 */
+        .admin-input-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .admin-input-group label {
+            display: block;
+            font-size: 16px;
+            font-weight: bold;
+            color: #1f8195;
+            margin-left: 10px;
+            margin-bottom: 5px;
+        }
+
+        /* 🔢 Task 9 專屬隨機題目大數字顯示 */
+        .task-random-number {
+            font-size: 54px;
+            color: #1f8195;
+            font-weight: bold;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+
+        /* 按鈕基礎樣式 */
+        .btn {
+            width: 100%;
+            height: 56px;
+            border: none;
+            background-color: #00a854;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 168, 84, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+            margin-bottom: 20px;
+        }
+
+        /* 藍綠色提示鈕 */
+        .btn-blue {
+            background-color: #1f8195;
+            box-shadow: 0 6px 15px rgba(31, 129, 149, 0.3);
+            cursor: default;
+            margin-bottom: 0;
+        }
+
+        /* Task 1 上載按鈕 */
+        .btn-upload {
+            background-color: #e2a4f4;
+            color: #000000;
+            box-shadow: 0 6px 15px rgba(226, 164, 244, 0.4);
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        /* 返回及紅橘色小按鈕 */
+        .btn-back {
+            display: inline-block;
+            width: auto;
+            height: auto;
+            padding: 8px 18px;
+            background-color: #ff6b6b;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:active, .btn-back:active, .btn-upload:active {
+            transform: scale(0.97);
+        }
+
+        /* ⏳ 倒數計時器 */
+        .timer-label {
+            color: #1f8195;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .timer-display {
+            color: #1f8195;
+            font-size: 46px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        /* 📷 相機框與結算條碼框 */
+        .scanner-box {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background-color: #000000;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 0 auto 25px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 讓生成的 QR Code 在黑框中置中且有白色保護外邊 */
+        .qrcode-wrapper {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        #reader button, #admin-reader button { display: none !important; }
+        #reader img, #admin-reader img { display: none !important; }
+        #reader, #admin-reader { border: none !important; }
+
+        /* 長條 */
+        .status-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #00a854; 
+            border-radius: 5px;
+            margin-bottom: 25px;
+            transition: background-color 0.3s ease;
+        }
+
+        .status-bar.error {
+            background-color: #d93838; 
+        }
+
+        /* --- Task 關卡畫面排版 --- */
+        .task-header {
+            text-align: left;
+            color: #1f8195;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .task-title {
+            text-align: left;
+            color: #1f8195;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            white-space: pre-line;
+        }
+
+        .task-description {
+            text-align: left;
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            white-space: pre-line;
+        }
+
+        .task-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .points-award {
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* --- 🎂 Task 3 生日排版 --- */
+        .birthday-container {
+            display: none; 
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .birthday-label-row {
+            display: flex;
+            justify-content: space-between;
+            color: #1f8195;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 0 10px;
+            gap: 15px;
+        }
+
+        .birthday-row {
+            margin-bottom: 15px;
+        }
+
+        .birthday-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .birthday-input {
+            width: 46%;
+            height: 44px;
+            border: none;
+            background-color: #ffffff;
+            border-radius: 22px;
+            padding: 0 15px;
+            font-size: 16px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+            outline: none;
+        }
+
+        .birthday-line {
+            width: 100%;
+            height: 6px;
+            background-color: #d93838; 
+            border-radius: 3px;
+            margin-top: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .birthday-line.correct {
+            background-color: #00a854; 
+        }
+
+        /* --- 🎤 共用：計數與雙頁切換排版 --- */
+        .counter-container {
+            display: none;
+            width: 100%;
+            text-align: center;
+        }
+
+        .counter-label {
+            color: #1f8195;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .counter-number {
+            color: #1f8195;
+            font-size: 64px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .counter-btn-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .btn-half-blue {
+            width: 48%;
+            height: 54px;
+            background-color: #1f8195;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(31, 129, 149, 0.3);
+            cursor: pointer;
+        }
+
+        .btn-half-green {
+            width: 48%;
+            height: 54px;
+            background-color: #00a854;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 6px 12px rgba(0, 168, 84, 0.3);
+            cursor: pointer;
+        }
+
+        .btn-half-blue:active, .btn-half-green:active {
+            transform: scale(0.96);
+        }
+
+        /* --- 🍾 內置 Admin Scanner 排版樣式 --- */
+        .admin-scanner-container {
+            display: none;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        
+        <div id="global-header" style="display: none;">
+            <div class="top-time-bar" id="real-time">00:00:00</div>
+            <div class="info-bar">
+                <div id="display-player-name">玩家名稱</div>
+                <div id="display-score">積分：0000</div>
+            </div>
+        </div>
+
+        <div class="content-body">
+
+            <div id="home-view" class="card">
+                <h2>玩家名稱</h2>
+                <input type="text" id="player-name" class="input-field" placeholder="請輸入名字..." autocomplete="off">
+                <button class="btn" onclick="loginGame()" style="margin-bottom:0;">登入遊戲</button>
+            </div>
+
+            <div id="ready-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="ready-clock">00:20:00</div>
+                <button class="btn" onclick="startGameClock()" style="margin-bottom:0;">開始遊戲</button>
+            </div>
+
+            <div id="scan-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="scan-clock">00:20:00</div>
+                <div class="scanner-box" id="reader"></div>
+                <div class="status-bar" id="indicator-bar"></div>
+                <button class="btn btn-blue">請將鏡頭對準 QR Code</button>
+            </div>
+
+            <div id="task-view" class="card">
+                <div class="timer-label">尚餘時間</div>
+                <div class="timer-display" id="task-clock">00:20:00</div>
+                
+                <div class="task-header" id="task-id-label">Task 1</div>
+                <div class="task-title" id="task-main-title">標題</div>
+                <div class="task-description" id="task-desc">描述</div>
+                
+                <div id="task9-random-display" class="task-random-number" style="display: none;">5833</div>
+
+                <button id="task-upload-btn" class="btn btn-upload" onclick="openExternalForm()">上 載</button>
+                <input type="text" id="task-password-input" class="input-field" placeholder="輸入密碼" oninput="checkPasswordAuto(this)" autocomplete="off">
+                <button id="task-verify-btn" class="btn" onclick="checkPasswordManual()">核對答案</button>
+                
+                <div id="task3-birthday-box" class="birthday-container">
+                    <div class="birthday-label-row">
+                        <div style="width: 46%; text-align: center;">Unity團友</div>
+                        <div style="width: 46%; text-align: center;">生日日期 (MM/DD)</div>
+                    </div>
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-1" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-1" class="birthday-input" placeholder="0101" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-1" class="birthday-line"></div>
+                    </div>
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-2" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-2" class="birthday-input" placeholder="0202" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-2" class="birthday-line"></div>
+                    </div>
+                    <div class="birthday-row">
+                        <div class="birthday-inputs">
+                            <input type="text" id="t3-name-3" class="birthday-input" placeholder="名字" oninput="verifyTask3Progress()" autocomplete="off">
+                            <input type="text" id="t3-date-3" class="birthday-input" placeholder="0303" oninput="verifyTask3Progress()" autocomplete="off">
+                        </div>
+                        <div id="t3-line-3" class="birthday-line"></div>
+                    </div>
+                </div>
+
+                <div id="task5-counter-box" class="counter-container">
+                    <div class="counter-label" id="counter-box-label">答對題目數目</div>
+                    <div class="counter-number" id="t5-count-display">00</div>
+                    <div class="counter-btn-row">
+                        <button class="btn-half-blue" id="counter-add-btn" onclick="increaseTask5Count()">答對一題</button>
+                        <button class="btn-half-green" onclick="switchToAdminScanner()">成功</button>
+                    </div>
+                </div>
+
+                <div id="task8-timer-box" class="counter-container">
+                    <div class="counter-label">尚餘時間</div>
+                    <div class="counter-number" id="t8-time-display">03:00</div>
+                    <div class="counter-btn-row">
+                        <button id="t8-control-btn" class="btn-half-blue" onclick="handleTask8TimerClick()">計時開始</button>
+                        <button class="btn-half-green" onclick="switchToAdminScanner()">成功</button>
+                    </div>
+                </div>
+
+                <div id="task13-button-box" class="counter-container">
+                    <button class="btn" onclick="switchToAdminScanner()" style="background-color: #00a854; margin-bottom: 0;">成 功</button>
+                </div>
+
+                <div id="admin-scanner-box" class="admin-scanner-container">
+                    <div class="scanner-box" id="admin-reader"></div>
+                    <div class="status-bar" id="admin-indicator-bar"></div>
+                </div>
+                
+                <div class="task-footer-info">
+                    <div class="points-award" id="task-points-label">完成可獲 100 分</div>
+                    <button class="btn-back" onclick="cleanAndBackToScan()">返回掃描</button>
+                </div>
+            </div>
+
+            <div id="end-view" class="card">
+                <div class="task-title" style="text-align: center; font-size: 32px; margin-bottom: 15px;">結束</div>
+                <div class="counter-label" style="font-size: 22px; margin-bottom: 5px;">你的 Total 分數</div>
+                <div class="counter-number" id="end-total-score" style="font-size: 56px; margin-bottom: 25px;">0000</div>
+                
+                <div class="scanner-box">
+                    <div id="end-qrcode-target" class="qrcode-wrapper"></div>
+                </div>
+                <button class="btn btn-blue" style="margin-bottom: 0; background-color: #1f8195;">遊戲已結束</button>
+            </div>
+
+            <div id="admin-panel-view" class="card">
+                <div class="task-title" style="text-align: center; font-size: 28px; margin-bottom: 25px;">Admin 修改區</div>
+                
+                <div class="admin-input-group">
+                    <label>玩家名字</label>
+                    <input type="text" id="admin-edit-name" class="input-field" placeholder="修改名字" autocomplete="off">
+                </div>
+                
+                <div class="admin-input-group">
+                    <label>目前積分</label>
+                    <input type="number" id="admin-edit-score" class="input-field" placeholder="修改分數" autocomplete="off">
+                </div>
+                
+                <div class="admin-input-group">
+                    <label>剩餘時間 (輸入分鐘數，例: 15)</label>
+                    <input type="number" id="admin-edit-time" class="input-field" placeholder="例如：20" autocomplete="off">
+                </div>
+
+                <button class="btn" onclick="saveAdminModifications()" style="background-color: #00a854; margin-top: 10px; margin-bottom: 20px;">儲存修改</button>
+                <button class="btn-back" onclick="exitAdminPanel()" style="width: 100%; height: 48px; font-size: 18px;">返回 Scanner</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 🎮 遊戲核心關卡資料庫
+        const taskDatabase = {
+            "001": { id: "Task 1", title: "攝影 Pro Max", desc: "請拍攝你自己與芒果樹的合照並上載至Google Form", url: "https://docs.google.com/forms/d/e/1FAIpQLSf9LMqvC9gSHjg4H0oHexYyGiyNE_rdfBm2lqJduYfh_fpGKA/viewform?usp=dialog", password: "2847", points: 200, type: "auto" },
+   
+				"002": { 
+    				id: "Task 2", 
+    				title: "Eye 瘋", 
+    				desc: "隨機題目載入中...", 
+    				points: 200, 
+    				type: "manual" // 維持 manual 填寫模式，但我們會動態變更 desc 與動態答案
+},
+
+                    "003": { 
+            id: "Task 3", 
+            title: "Happy birthday", 
+            desc: "請回答3位Unity團隊生日日期", 
+            points: 100, 
+            type: "birthday", 
+            answers: [
+                { name: "Angle", date: "0524" }, 
+                { name: "Jayden", date: "0827" }, 
+                { name: "Oriana", date: "0827" }, 
+                { name: "Hayden", date: "0913" }, 
+                { name: "Suki", date: "1008" }, 
+                { name: "Class Long", date: "0831" }, 
+                { name: "Arone", date: "1105" }, 
+                { name: "Gabriel", date: "0604" }, 
+                { name: "Kit", date: "1004" }, 
+                { name: "Matthew", date: "0513" }, 
+                { name: "Felix", date: "1224" }, 
+                { name: "Bosoc", date: "1213" }, 
+                { name: "Cherry", date: "0120" }, 
+                { name: "Wyatt", date: "0422"}, 
+                { name: "Joshua", date: "0622" }, 
+                { name: "CHS", date: "0915" }, 
+                { name: "Yurro", date: "1210" }
+            ] 
+        },
+
+            "004": { id: "Task 4", title: "Bottle Flip", desc: "完成後 請掃描 Admin code 加分", points: 100, type: "admin_scan", admins: { "kit": "Kit", "suki": "Suki" } },
+            "005": { id: "Task 5", title: "媽媽今天不必擔心我~", desc: "主持人會比一個特定字\n參賽者需要唱出兩句含有該字的歌詞\n(夠→主能夠~主能夠~)", points: 100, type: "song_counter", admins: { "kit": "Kit", "suki": "Suki" } },
+            "006": { id: "Task 6", title: "零知", desc: "請找出安柱靈芝\n找到後請用 Admin code 加分", points: 350, type: "admin_scan", admins: { "kit": "Kit", "suki": "Suki" } },
+            "007": { id: "Task 7", title: "Feet Far", desc: "請計算龍門距離中場大概多長 (cm)", url: "", password: "200", points: 350, type: "manual" },
+            "008": { id: "Task 8", title: "正話反說", desc: "根據主持人的詞語或句子\n參賽者須掉轉講一次\n(安柱堂→堂柱安)\n3分鐘內把所有詞語成功倒轉一次即可加分", points: 350, type: "reverse_timer", admins: { "kit": "Kit", "suki": "Suki" } },
+            "009": { id: "Task 9", title: "砌碼", desc: "請找出以下數字代表的正確密碼", points: 100, type: "dynamic_code" },
+            "010": { id: "Task 10", title: "Mama Hungry", desc: "隨機計算題", points: 200, type: "manual" },
+            "011": { id: "Task 11", title: "It is mine", desc: "請尋找主持人要求的物品\n完成後掃描 Admin code 加分", points: 100, type: "admin_scan", admins: { "kit": "Kit", "suki": "Suki" } },
+            "012": { id: "Task 12", title: "Church", desc: "請輸入安柱堂電話號碼", password: "18507507", points: 100, type: "manual" },
+            "013": { id: "Task 13", title: "傳聲筒", desc: "主持人會播一條外語片，其中一位組員睇完後需要傳比下一位組員，如此類推，到最後一位組員講出原意沒有太大分別即可加分", points: 200, type: "transmission", admins: { "kit": "Kit", "suki": "Suki" } },
+            "014": { id: "Task 14", title: "齊來數一數", desc: "隨機出問題", points: 200, type: "random_quiz" },
+            "015": { id: "Task 15 ", title: "故事接龍", desc: "每人需輪流根據一句\n句子並添加詞語，例如\n今日我喺安柱→今日我喺安柱做task", points: 350, type: "transmission", admins: { "kit": "Kit", "suki": "Suki" } },
+            "016": { id: "Task 16", title: "你畫我猜", desc: "參賽隊伍需輪流派出一人去畫\n並於30秒之內畫完\n但只能使用圖形拼砌\n（圓形/長方形/三角形/正方形）\n一半以上正確率即可得分", points: 350, type: "reverse_timer_30s", admins: { "kit": "Kit", "suki": "Suki" } },
+            "017": { id: "Task 17", title: "321請回答", desc: "主持人會有一條題目\n成員需輪流於3秒內回答\n答中加1分 共有15次答題機會\n6分以上則為成功", points: 350, type: "song_counter_17", admins: { "kit": "Kit", "suki": "Suki" } }
+        };
+
+        const task9Mapping = { '1': '5', '2': '8', '3': '1', '4': '0', '5': '3', '6': '9', '7': '4', '8': '7', '9': '2', '0': '6' };
+
+
+const task2QuestionBank = [
+    { q: "請數出信社社 Board 上共有多少個人頭？", a: "25" },
+    { q: "請數出義社社 Board 上共有多少個人頭？", a: "12" },
+    { q: "請數出忠社社 Board 上共有多少個人頭？", a: "8" },
+    { q: "請數出誠社社 Board 上共有多少個人頭？", a: "5" } // <-- 直接在這裡加
+];
+
+        const task10QuestionBank = [
+            { q: "請計算俊髮要買8包燒賣 + 1盒豆腐花 + 250mL維他奶要幾多錢？", a: "68" },
+            { q: "請計算買4包燒賣 + 2盒豆腐花 + 2支大水總共需要支付多少錢？", a: "52" },
+            { q: "若俊髮身上有 $100，買了5包燒賣和2盒豆腐花後，還剩多少錢？", a: "45" }
+        ];
+
+        const task14QuestionBank = [
+            { q: "請數數圖書館近𨋢櫃子中間的那一層有多少本書？", a: "15" },
+            { q: "請數數圖書館近𨋢櫃子上間的那一層有多少本書？", a: "8" },
+            { q: "請數數圖書館近𨋢櫃子下間的那一層有多少本書？", a: "4" }
+        ];
+
+        let playerNameStr = "玩家名稱";
+        let currentScore = 0;
+        let html5QrcodeScanner = null;
+        let adminQrcodeScanner = null; 
+        let countdownInterval = null;
+        let timeLeftSeconds = 20 * 60; 
+        let finishedTasksLog = {}; 
+        let isProcessingScan = false; 
+        let currentActiveTaskKey = null; 
+        let isGameOver = false;
+
+        let task5MatchCount = 0; 
+        let task8TimerInterval = null;
+        let task8TimeLeft = 3 * 60; 
+        let task8TimerState = "idle"; 
+        let dynamicTaskAnswer = "";
+
+        // --- 1. 頂部實時時鐘 ---
+        function updateRealTime() {
+            const now = new Date();
+            document.getElementById('real-time').innerText = 
+                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+        setInterval(updateRealTime, 1000);
+        updateRealTime();
+
+        // --- 2. 玩家登入 ---
+        function loginGame() {
+            const name = document.getElementById('player-name').value.trim();
+            if (!name) return alert("請輸入名字！");
+            playerNameStr = name;
+            document.getElementById('display-player-name').innerText = playerNameStr;
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('global-header').style.display = 'block';
+            document.getElementById('ready-view').style.display = 'block';
+        }
+
+        // --- 3. 開始遊戲 ---
+        function startGameClock() {
+            document.getElementById('ready-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            startCountdown(); 
+            initCamera();     
+        }
+
+        // --- 4. 初始化主相機 (優化 FPS 以防止部分手機卡頓，並設定記憶鏡頭) ---
+function initCamera() {
+    if (isGameOver) return;
+    
+    // 如果實例不存在，建立全新實例
+    if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5Qrcode("reader");
+    }
+    
+    // 關鍵修復：檢查是否正在運行，避免重複啟動報錯
+    if (html5QrcodeScanner.isScanning) {
+        return; 
+    }
+
+    // 關鍵優化：將 FPS 微調至 10，大幅減輕移動端硬體運算發熱與卡頓，並開啟 rememberLastUsedCamera
+    html5QrcodeScanner.start(
+        { facingMode: "environment" }, 
+        { 
+            fps: 10, 
+            qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }), 
+            rememberLastUsedCamera: true 
+        },
+        (decodedText) => { handleScanResult(decodedText.trim()); }, 
+        () => {}  
+    ).catch(err => { console.error("相機啟動失敗或權限遭拒: ", err); });
+}
+
+// 🛡️ 核心修復：全面加上安全狀態檢查，完美解決「按下返回按鈕後整個頁面失效」的 Bug
+function cleanAndBackToScan() {
+    clearInterval(task8TimerInterval); // 清除可能還在執行的關卡獨立計時器
+
+    // 如果 Admin 相機正在掃描，先安全關閉
+    if (adminQrcodeScanner && adminQrcodeScanner.isScanning) {
+        adminQrcodeScanner.stop().then(() => {
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            currentActiveTaskKey = null;
+            initCamera(); // 安全返回並重新初始化主相機
+        }).catch(() => {
+            // 即使 stop 發生異常，也強制切換介面並初始化，防止頁面卡死
+            document.getElementById('task-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            currentActiveTaskKey = null;
+            initCamera();
+        });
+    } else {
+        // 若沒有啟動 Admin 相機，直接安全返回
+        document.getElementById('task-view').style.display = 'none';
+        document.getElementById('scan-view').style.display = 'block';
+        currentActiveTaskKey = null;
+        initCamera();
+    }
+}
+
+
+        // --- 5. 解讀條碼與動態介面切換 ---
+        function handleScanResult(codeText) {
+            if (isProcessingScan || isGameOver) return; 
+            const lowerCode = codeText.toLowerCase();
+
+            if (lowerCode === 'reset') {
+                isProcessingScan = true;
+                resetWholeGame();
+                return;
+            }
+
+            // ⚡ 觸發進入 Admin 修改區
+            if (lowerCode === 'admin') {
+                isProcessingScan = true;
+                if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                    html5QrcodeScanner.stop().then(() => {
+                        enterAdminPanel();
+                    }).catch(() => { enterAdminPanel(); });
+                } else {
+                    enterAdminPanel();
+                }
+                return;
+            }
+
+            if (taskDatabase[lowerCode]) {
+                isProcessingScan = true;
+                
+                if (finishedTasksLog[lowerCode]) {
+                    if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                        html5QrcodeScanner.stop().then(() => {
+                            alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
+                            isProcessingScan = false;
+                            initCamera(); 
+                        }).catch(() => {
+                            alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
+                            isProcessingScan = false;
+                            initCamera();
+                        });
+                    } else {
+                        alert(`這個任務你已經大功告成，拿過分數囉！請去挑戰其他關卡。`);
+                        isProcessingScan = false;
+                        initCamera();
+                    }
+                    return;
+                }
+
+                currentActiveTaskKey = lowerCode;
+                const data = taskDatabase[lowerCode];
+                
+                document.getElementById('task-id-label').innerText = data.id;
+                document.getElementById('task-main-title').innerText = data.title;
+                document.getElementById('task-desc').innerText = data.desc;
+                document.getElementById('task-points-label').innerText = `完成可獲 ${data.points} 分`;
+                
+                document.getElementById('task-password-input').value = ""; 
+                document.getElementById('task9-random-display').style.display = "none";
+                task5MatchCount = 0;
+                document.getElementById('t5-count-display').innerText = "00";
+
+                if (data.type === "reverse_timer_30s") {
+                    task8TimeLeft = 30;
+                } else {
+                    task8TimeLeft = 3 * 60;
+                }
+                resetTask8TimerUI(); 
+
+                if (data.type === "song_counter_17") {
+                    document.getElementById('counter-box-label').innerText = "答對題目數量";
+                } else {
+                    document.getElementById('counter-box-label').innerText = "答對題目數目";
+                }
+
+                for(let i=1; i<=3; i++){
+                    document.getElementById(`t3-name-${i}`).value = "";
+                    document.getElementById(`t3-date-${i}`).value = "";
+                    document.getElementById(`t3-line-${i}`).classList.remove('correct');
+                }
+
+                if (data.type === "dynamic_code") {
+                    let generatedQuiz = "";
+                    let generatedAns = "";
+                    for (let i = 0; i < 4; i++) {
+                        const randomDigit = Math.floor(Math.random() * 10).toString();
+                        generatedQuiz += randomDigit;
+                        generatedAns += task9Mapping[randomDigit];
+                    }
+                    dynamicTaskAnswer = generatedAns; 
+                    document.getElementById('task9-random-display').innerText = generatedQuiz;
+                    document.getElementById('task9-random-display').style.display = "block";
+                }
+
+
+if (lowerCode === "002") {
+    // 隨機抽出一題 Task 2 的題目
+    const randomQuizObj = task2QuestionBank[Math.floor(Math.random() * task2QuestionBank.length)];
+    document.getElementById('task-desc').innerText = randomQuizObj.q;
+    dynamicTaskAnswer = randomQuizObj.a; // 將正確答案存入動態變數中進行核對
+}
+
+if (lowerCode === "010") {
+    const randomQuizObj = task10QuestionBank[Math.floor(Math.random() * task10QuestionBank.length)];
+    document.getElementById('task-desc').innerText = randomQuizObj.q;
+    dynamicTaskAnswer = randomQuizObj.a; 
+}
+
+          
+
+                if (data.type === "random_quiz") {
+                    const randomQuizObj = task14QuestionBank[Math.floor(Math.random() * task14QuestionBank.length)];
+                    document.getElementById('task-desc').innerText = randomQuizObj.q;
+                    dynamicTaskAnswer = randomQuizObj.a;
+                }
+
+                if (data.type === "auto") {
+                    document.getElementById('task-upload-btn').style.display = "block";
+                    document.getElementById('task-password-input').style.display = "block";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                    document.getElementById('task-password-input').placeholder = "輸入密碼";
+                } else if (data.type === "manual" || data.type === "random_quiz") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "block";
+                    document.getElementById('task-verify-btn').style.display = "block";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                    document.getElementById('task-password-input').placeholder = "輸入欄";
+                } else if (data.type === "dynamic_code") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "block";
+                    document.getElementById('task-verify-btn').style.display = "block";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                    document.getElementById('task-password-input').placeholder = "輸入欄";
+                } else if (data.type === "birthday") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "block";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                } else if (data.type === "admin_scan") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "block";
+                } else if (data.type === "song_counter" || data.type === "song_counter_17") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "block";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                } else if (data.type === "reverse_timer" || data.type === "reverse_timer_30s") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "block";
+                    document.getElementById('task13-button-box').style.display = "none";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                } else if (data.type === "transmission") {
+                    document.getElementById('task-upload-btn').style.display = "none";
+                    document.getElementById('task-password-input').style.display = "none";
+                    document.getElementById('task-verify-btn').style.display = "none";
+                    document.getElementById('task3-birthday-box').style.display = "none";
+                    document.getElementById('task5-counter-box').style.display = "none";
+                    document.getElementById('task8-timer-box').style.display = "none";
+                    document.getElementById('task13-button-box').style.display = "block";
+                    document.getElementById('admin-scanner-box').style.display = "none";
+                }
+
+                if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                    html5QrcodeScanner.stop().then(() => {
+                        document.getElementById('scan-view').style.display = 'none';
+                        document.getElementById('task-view').style.display = 'block';
+                        isProcessingScan = false;
+
+                        if (data.type === "admin_scan") {
+                            initAdminCamera();
+                        }
+                    }).catch(() => { isProcessingScan = false; });
+                } else {
+                    document.getElementById('scan-view').style.display = 'none';
+                    document.getElementById('task-view').style.display = 'block';
+                    isProcessingScan = false;
+                    if (data.type === "admin_scan") {
+                        initAdminCamera();
+                    }
+                }
+            } else {
+                isProcessingScan = true;
+                triggerScanFailure('indicator-bar');
+                setTimeout(() => { isProcessingScan = false; }, 3000);
+            }
+        }
+
+        function triggerScanFailure(barId) {
+            const bar = document.getElementById(barId);
+            if(bar) {
+                bar.classList.add('error');
+                setTimeout(() => { bar.classList.remove('error'); }, 3000);
+            }
+        }
+
+        function openExternalForm() {
+            if (!currentActiveTaskKey) return;
+            const targetUrl = taskDatabase[currentActiveTaskKey].url;
+            if(targetUrl) window.open(targetUrl, '_blank'); 
+        }
+
+        // --- 6. 計數器控制 ---
+        function increaseTask5Count() {
+            task5MatchCount++;
+            document.getElementById('t5-count-display').innerText = String(task5MatchCount).padStart(2, '0');
+        }
+
+        // --- 7. ⏱️ 獨立計時器控制狀態機 ---
+        function handleTask8TimerClick() {
+            const btn = document.getElementById('t8-control-btn');
+            
+            if (task8TimerState === "idle") {
+                task8TimerState = "running";
+                btn.innerText = "暫停";
+                
+                task8TimerInterval = setInterval(() => {
+                    if (task8TimeLeft <= 0) {
+                        clearInterval(task8TimerInterval);
+                        task8TimerState = "idle";
+                        btn.innerText = "計時開始";
+                        alert("⏱️ 挑戰時間到！");
+                        return;
+                    }
+                    task8TimeLeft--;
+                    updateTask8TimerDisplay();
+                }, 1000);
+
+            } else if (task8TimerState === "running") {
+                clearInterval(task8TimerInterval);
+                task8TimerState = "paused";
+                btn.innerText = "重設";
+
+            } else if (task8TimerState === "paused") {
+                if (!currentActiveTaskKey) return;
+                const data = taskDatabase[currentActiveTaskKey];
+                task8TimeLeft = (data.type === "reverse_timer_30s") ? 30 : 3 * 60;
+                resetTask8TimerUI();
+            }
+        }
+
+        function updateTask8TimerDisplay() {
+            const m = String(Math.floor(task8TimeLeft / 60)).padStart(2, '0');
+            const s = String(task8TimeLeft % 60).padStart(2, '0');
+            document.getElementById('t8-time-display').innerText = `${m}:${s}`;
+        }
+
+        function resetTask8TimerUI() {
+            clearInterval(task8TimerInterval);
+            task8TimerState = "idle";
+            const btn = document.getElementById('t8-control-btn');
+            if (btn) btn.innerText = "計時開始";
+            updateTask8TimerDisplay();
+        }
+
+        // --- 8. 成功按鈕：切換至 Admin 掃描頁面 ---
+        function switchToAdminScanner() {
+            clearInterval(task8TimerInterval); 
+            document.getElementById('task5-counter-box').style.display = "none";
+            document.getElementById('task8-timer-box').style.display = "none";
+            document.getElementById('task13-button-box').style.display = "none";
+            
+            document.getElementById('task-desc').innerText = "請用 Admin code 加分";
+            document.getElementById('admin-scanner-box').style.display = "block";
+            initAdminCamera();
+        }
+
+        // --- 9. 🍾 啟動內置 Admin Scanner ---
+        function initAdminCamera() {
+            if (!adminQrcodeScanner) {
+                adminQrcodeScanner = new Html5Qrcode("admin-reader");
+            }
+            if (adminQrcodeScanner.isScanning) {
+                return;
+            }
+            adminQrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }), rememberLastUsedCamera: true },
+                (decodedText) => { handleAdminScanResult(decodedText.trim()); }, 
+                () => {}  
+            ).catch(err => console.error(err));
+        }
+
+        // --- 10. 識別 Admin 條碼並安全發放積分 ---
+        function handleAdminScanResult(codeText) {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            const lowerAdminCode = codeText.toLowerCase();
+
+            if (data.admins && data.admins[lowerAdminCode]) {
+                const adminName = data.admins[lowerAdminCode];
+                const points = data.points;
+
+                if (adminQrcodeScanner && adminQrcodeScanner.isScanning) {
+                    adminQrcodeScanner.stop().then(() => {
+                        currentScore += points;
+                        document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+                        finishedTasksLog[currentActiveTaskKey] = true; 
+
+                        alert(`🎉 成功通關！由 Admin ${adminName} 幫你加了 ${points} 分！`);
+                        
+                        document.getElementById('task-view').style.display = 'none';
+                        currentActiveTaskKey = null;
+                        
+                        checkGameCompletionStatus();
+                    }).catch(err => { console.error(err); });
+                } else {
+                    currentScore += points;
+                    document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+                    finishedTasksLog[currentActiveTaskKey] = true; 
+                    alert(`🎉 成功通關！加了 ${points} 分！`);
+                    document.getElementById('task-view').style.display = 'none';
+                    currentActiveTaskKey = null;
+                    checkGameCompletionStatus();
+                }
+            } else {
+                triggerScanFailure('admin-indicator-bar');
+            }
+        }
+
+        // --- 11. 🔑 答案核對中央控制系統 ---
+        function checkPasswordAuto(inputElement) {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            if (data.type !== "auto") return; 
+            if (inputElement.value.trim() === data.password) {
+                executeTaskSuccess(data.points);
+            }
+        }
+
+        function checkPasswordManual() {
+    if (!currentActiveTaskKey) return;
+    const data = taskDatabase[currentActiveTaskKey];
+    const userTyped = document.getElementById('task-password-input').value.trim();
+    
+    // 關鍵修復：確保 002、010 以及其他動態產碼、隨機題目的關卡都使用 dynamicTaskAnswer 核對
+    if (currentActiveTaskKey === "002" || currentActiveTaskKey === "010" || data.type === "dynamic_code" || data.type === "random_quiz") {
+        if (userTyped === dynamicTaskAnswer) {
+            executeTaskSuccess(data.points);
+        } else {
+            alert("❌ 答案不正確，重新清點/計算一下吧！");
+        }
+        return;
+    }
+
+    // 固定密碼的關卡核對
+    if (userTyped === data.password) {
+        executeTaskSuccess(data.points);
+    } else {
+        alert("❌ 答案不正確，再試試看！");
+    }
+}
+
+                function verifyTask3Progress() {
+            if (!currentActiveTaskKey) return;
+            const data = taskDatabase[currentActiveTaskKey];
+            if (data.type !== "birthday") return;
+
+            let correctCount = 0;
+
+            // 檢查 3 個輸入組
+            for (let i = 1; i <= 3; i++) {
+                const inputName = document.getElementById(`t3-name-${i}`).value.trim().toLowerCase();
+                const inputDate = document.getElementById(`t3-date-${i}`).value.trim();
+                const lineIndicator = document.getElementById(`t3-line-${i}`);
+
+                if (inputName === "" || inputDate === "") {
+                    lineIndicator.classList.remove('correct');
+                    continue;
+                }
+
+                // 在 17 人的大名單中尋找是否有相符的組合
+                const isMatch = data.answers.some(item => 
+                    item.name.toLowerCase() === inputName && item.date === inputDate
+                );
+
+                if (isMatch) {
+                    lineIndicator.classList.add('correct');
+                    correctCount++;
+                } else {
+                    lineIndicator.classList.remove('correct');
+                }
+            }
+
+            // 三個欄位都填寫正確且符合名單，觸發通關
+            if (correctCount === 3) {
+                setTimeout(() => { executeTaskSuccess(data.points); }, 300);
+            }
+        }
+
+        function executeTaskSuccess(points) {
+            currentScore += points;
+            document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+            finishedTasksLog[currentActiveTaskKey] = true; 
+            alert(`🎉 恭喜成功通關！獲得 ${points} 分！`);
+            
+            clearInterval(task8TimerInterval);
+            document.getElementById('task-view').style.display = 'none';
+            currentActiveTaskKey = null;
+            
+            checkGameCompletionStatus();
+        }
+
+        // 📊 檢查是否 17 個關卡全部做完
+        function checkGameCompletionStatus() {
+            const totalTasksCount = Object.keys(taskDatabase).length;
+            const finishedCount = Object.keys(finishedTasksLog).length;
+            
+            if (finishedCount >= totalTasksCount) {
+                triggerGameOverEndView();
+            } else {
+                document.getElementById('scan-view').style.display = 'block';
+                initCamera();
+            }
+        }
+
+        // 🏁 核心修復：確保提早通關、正常全破時，結算 QR Code 都能順利百分之百渲染出來
+function triggerGameOverEndView() {
+    isGameOver = true;
+    clearInterval(countdownInterval);
+    clearInterval(task8TimerInterval);
+
+    const stopPromises = [];
+    if (html5QrcodeScanner && html5QrcodeScanner.isScanning) stopPromises.push(html5QrcodeScanner.stop().catch(() => {}));
+    if (adminQrcodeScanner && adminQrcodeScanner.isScanning) stopPromises.push(adminQrcodeScanner.stop().catch(() => {}));
+
+    Promise.all(stopPromises).then(() => {
+        // 1. 先把所有其他畫面隱藏
+        document.getElementById('scan-view').style.display = 'none';
+        document.getElementById('task-view').style.display = 'none';
+        document.getElementById('admin-panel-view').style.display = 'none';
+        
+        // 2. 「必須先」把結束畫面顯示出來（讓 DOM 獲得實體寬高），並塞入分數
+        document.getElementById('end-total-score').innerText = String(currentScore).padStart(4, '0');
+        document.getElementById('end-view').style.display = 'block';
+
+        // 3. 準備條碼內容
+        const qrContentString = `${playerNameStr}_${currentScore}`;
+        
+        // 4. 清空舊的容器
+        document.getElementById('end-qrcode-target').innerHTML = "";
+        
+        // 5. 加上微小的延遲（100毫秒），確保瀏覽器已經完全渲染好黑框，再正式繪製 QR Code
+        setTimeout(() => {
+            new QRCode(document.getElementById('end-qrcode-target'), {
+                text: qrContentString,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }, 100);
+    });
+}
+
+        // 🛡️ 核心修復：全面加上安全狀態鎖，完美解決「返回按鈕失效」與「相機卡死」的Bug
+        function cleanAndBackToScan() {
+            clearInterval(task8TimerInterval); 
+
+            if (adminQrcodeScanner && adminQrcodeScanner.isScanning) {
+                adminQrcodeScanner.stop().then(() => {
+                    document.getElementById('task-view').style.display = 'none';
+                    document.getElementById('scan-view').style.display = 'block';
+                    currentActiveTaskKey = null;
+                    initCamera();
+                }).catch(() => {
+                    document.getElementById('task-view').style.display = 'none';
+                    document.getElementById('scan-view').style.display = 'block';
+                    currentActiveTaskKey = null;
+                    initCamera();
+                });
+            } else {
+                document.getElementById('task-view').style.display = 'none';
+                document.getElementById('scan-view').style.display = 'block';
+                currentActiveTaskKey = null;
+                initCamera();
+            }
+        }
+
+        // --- 12. 🛠️ Admin 修改區邏輯控制 ---
+        function enterAdminPanel() {
+            clearInterval(task8TimerInterval);
+            document.getElementById('scan-view').style.display = 'none';
+            document.getElementById('task-view').style.display = 'none';
+            
+            document.getElementById('admin-edit-name').value = playerNameStr;
+            document.getElementById('admin-edit-score').value = currentScore;
+            document.getElementById('admin-edit-time').value = Math.floor(timeLeftSeconds / 60);
+            
+            document.getElementById('admin-panel-view').style.display = 'block';
+            isProcessingScan = false;
+        }
+
+        function saveAdminModifications() {
+            const newName = document.getElementById('admin-edit-name').value.trim();
+            const newScore = parseInt(document.getElementById('admin-edit-score').value);
+            const newMins = parseInt(document.getElementById('admin-edit-time').value);
+
+            if (!newName) return alert("名字不能為空！");
+            if (isNaN(newScore) || newScore < 0) return alert("分數請填寫正確正整數！");
+            if (isNaN(newMins) || newMins < 0) return alert("時間請填寫正確的分鐘數！");
+
+            playerNameStr = newName;
+            currentScore = newScore;
+            timeLeftSeconds = newMins * 60;
+
+            document.getElementById('display-player-name').innerText = playerNameStr;
+            document.getElementById('display-score').innerText = `積分：${String(currentScore).padStart(4, '0')}`;
+            
+            alert("⚙️ Admin 修改數據儲存成功！");
+        }
+
+        function exitAdminPanel() {
+            document.getElementById('admin-panel-view').style.display = 'none';
+            document.getElementById('scan-view').style.display = 'block';
+            initCamera();
+        }
+
+        // --- 13. 全域 Reset 機制 ---
+        function resetWholeGame() {
+            clearInterval(countdownInterval);
+            clearInterval(task8TimerInterval); 
+
+            currentScore = 0;
+            timeLeftSeconds = 20 * 60; 
+            finishedTasksLog = {}; 
+            currentActiveTaskKey = null;
+            isProcessingScan = false;
+            isGameOver = false;
+
+            const stopPromises = [];
+            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) { stopPromises.push(html5QrcodeScanner.stop().catch(() => {})); }
+            if (adminQrcodeScanner && adminQrcodeScanner.isScanning) { stopPromises.push(adminQrcodeScanner.stop().catch(() => {})); }
+
+            Promise.all(stopPromises).then(() => {
+                alert("🔄 遊戲已完全初始化重置！");
+                window.location.reload();
+            });
+        }
+
+        // --- 14. 主遊戲倒數計時器 ---
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                if (timeLeftSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    triggerGameOverEndView();
+                    return;
+                }
+                timeLeftSeconds--;
+                
+                const hrs = String(Math.floor(timeLeftSeconds / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((timeLeftSeconds % 3600) / 60)).padStart(2, '0');
+                const secs = String(timeLeftSeconds % 60).padStart(2, '0');
+                const timeStr = `${hrs}:${mins}:${secs}`;
+                
+                document.getElementById('ready-clock').innerText = timeStr;
+                document.getElementById('scan-clock').innerText = timeStr;
+                document.getElementById('task-clock').innerText = timeStr; 
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
