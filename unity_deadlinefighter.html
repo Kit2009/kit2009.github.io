@@ -62,28 +62,31 @@
             z-index: 10;
         }
 
-        /* 主要卡片容器 */
-        .content-body {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+       /* 修正：將原本的 flex: 1 改為允許滾動的配置 */
+.content-body {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* 改為從頂部開始排版，避免滾動時頂部被切掉 */
+    padding: 20px;
+    overflow-y: auto;        /* 關鍵：當整個卡片超出螢幕時，允許向下捲動 */
+    -webkit-overflow-scrolling: touch; /* 讓手機端捲動更平滑 */
+}
 
-        /* 半透明淡青綠色圓角卡片 */
-        .card {
-            background-color: rgba(225, 241, 239, 0.85);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            width: 100%;
-            max-width: 360px;
-            border-radius: 24px;
-            padding: 35px 25px;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
-            text-align: center;
-            animation: fadeIn 0.4s ease-out;
-        }
+       /* 修正：確保卡片在捲動時有底部留白 */
+.card {
+    background-color: rgba(225, 241, 239, 0.85);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    width: 100%;
+    max-width: 360px;
+    border-radius: 24px;
+    padding: 35px 25px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    animation: fadeIn 0.4s ease-out;
+    margin-bottom: 20px; /* 關鍵：增加底部留白，確保捲到最下面時按鈕不會被擋住 */
+}
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -621,9 +624,9 @@
 
 const task2QuestionBank = [
     { q: "請數出信社社 Board 上共有多少個人頭？", a: "25" },
-    { q: "請數出義社社 Board 上共有多少個人頭？", a: "12" },
-    { q: "請數出忠社社 Board 上共有多少個人頭？", a: "8" },
-    { q: "請數出誠社社 Board 上共有多少個人頭？", a: "5" } // <-- 直接在這裡加
+    { q: "請數出義社社 Board 上共有多少個人頭？", a: "26" },
+    { q: "請數出忠社社 Board 上共有多少個人頭？", a: "25" },
+    { q: "請數出誠社社 Board 上共有多少個人頭？", a: "34" } // <-- 直接在這裡加
 ];
 
         const task10QuestionBank = [
