@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>遊戲積分結算統計板</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #f7f4eb;
+        }
+
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('bg.png'); /* 請確保背景圖片名稱為 bg.png */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部深藍綠色實時時間狀態欄 */
+        .top-time-bar {
+            background-color: #1f8195;
+            color: #ffffff;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        /* 主要卡片區域容器 */
+        .content-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* 半透明淡青綠色圓角卡片 */
+        .card {
+            background-color: rgba(225, 241, 239, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            width: 100%;
+            max-width: 360px;
+            height: 85vh;
+            max-height: 680px;
+            border-radius: 24px;
+            padding: 25px 20px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card h2 {
+            color: #1f8195;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        /* 📷 掃描器黑色圓角框 */
+        .scanner-box {
+            width: 100%;
+            aspect-ratio: 1.1 / 1;
+            background-color: #000000;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 0 auto 10px auto;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            flex-shrink: 0;
+        }
+
+        /* 隱藏 html5-qrcode 插件自帶的冗餘按鈕與圖片 */
+        #reader button { display: none !important; }
+        #reader img { display: none !important; }
+        #reader { border: none !important; }
+
+        /* 成功/失敗掃描動態指示燈長條 */
+        .status-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #00a854; 
+            border-radius: 3px;
+            margin-bottom: 15px;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .status-bar.error {
+            background-color: #d93838; 
+        }
+
+        .status-bar.flash {
+            background-color: #ffffff;
+        }
+
+        /* --- 🏆 排行榜列表排版區 --- */
+        .leaderboard-title-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px 8px 15px;
+            border-bottom: 2px solid rgba(31, 129, 149, 0.3);
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* 滾動列表容器 */
+        .leaderboard-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-top: 8px;
+            padding-right: 2px;
+        }
+
+        /* 隱藏滾動條（優化視覺效果） */
+        .leaderboard-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .leaderboard-list::-webkit-scrollbar-thumb {
+            background: rgba(31, 129, 149, 0.2);
+            border-radius: 2px;
+        }
+
+        /* 隊伍數據列 */
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            animation: slideIn 0.3s ease-out;
+            transition: background-color 0.5s ease;
+        }
+
+        /* 當更新分數時觸發的黃色閃爍高亮特效 */
+        .team-row.updated-highlight {
+            background-color: rgba(255, 215, 0, 0.6);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .team-name {
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            word-break: break-all;
+            padding-right: 10px;
+        }
+
+        .team-score {
+            color: #1f8195;
+            font-size: 18px;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        <div class="top-time-bar" id="real-time">00:00:00</div>
+
+        <div class="content-body">
+            <div class="card">
+                <h2>計算分數</h2>
+                
+                <div class="scanner-box" id="reader"></div>
+                
+                <div class="status-bar" id="indicator-bar"></div>
+                
+                <div class="leaderboard-title-row">
+                    <div>隊伍</div>
+                    <div>分數</div>
+                </div>
+                
+                <div class="leaderboard-list" id="score-board-container">
+                    <div id="empty-tip" style="color: rgba(31,129,149,0.6); font-size: 16px; margin-top: 30px; font-weight: bold;">
+                        請掃描隊伍 QR Code 開始計分
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心儲存庫：用來存放所有隊伍與對應分數
+        // 格式： { "amy": 900, "bob": 1200 }
+        let teamsData = {};
+
+        let html5QrcodeScanner = null;
+        let isProcessing = false; // 防止連續重複讀取條碼
+
+        // --- 1. 頂部實時時鐘 ---
+        function updateRealTime() {
+            const now = new Date();
+            document.getElementById('real-time').innerText = 
+                `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+        setInterval(updateRealTime, 1000);
+        updateRealTime();
+
+        // --- 2. 初始化並啟動 QR Code 相機 ---
+        function initScoreScanner() {
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { 
+                    fps: 25, 
+                    qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.8 }) 
+                },
+                (decodedText) => { handleScoreScan(decodedText.trim()); }, 
+                () => {} // 忽略每影格掃描失敗
+            ).catch(err => {
+                alert("無法啟動相機，請確保已授權瀏覽器相機使用權限！");
+                console.error(err);
+            });
+        }
+
+        // --- 3. 解析與處理掃描出來的 QR Code 內容 ---
+        function handleScoreScan(scannedResult) {
+            if (isProcessing) return;
+            
+            // 預期格式為 "名稱_積分"，例如: amy_0900
+            if (!scannedResult.includes('_')) {
+                triggerFeedback('error');
+                return;
+            }
+
+            isProcessing = true;
+            
+            // 分割字串
+            const parts = scannedResult.split('_');
+            const teamName = parts[0].trim();
+            const scoreString = parts[1].trim();
+            const scoreValue = parseInt(scoreString, 10);
+
+            // 安全性驗證：確保有名稱且分數是有效數字
+            if (teamName === "" || isNaN(scoreValue)) {
+                triggerFeedback('error');
+                setTimeout(() => { isProcessing = false; }, 1500);
+                return;
+            }
+
+            // 成功解讀，觸發白色閃爍視覺反饋
+            triggerFeedback('flash');
+
+            // 執行數據更新（若隊伍存在則覆蓋，若不存在則新增）
+            teamsData[teamName] = scoreValue;
+
+            // 重新繪製並依分數排序排行榜
+            renderLeaderboard(teamName);
+
+            // 短暫延遲後允許下一次掃描（防連掃）
+            setTimeout(() => {
+                isProcessing = false;
+            }, 1800);
+        }
+
+        // --- 4. 閃爍狀態指示燈特效 ---
+        function triggerFeedback(type) {
+            const bar = document.getElementById('indicator-bar');
+            if (!bar) return;
+
+            bar.classList.remove('error', 'flash');
+            
+            // 強制瀏覽器重繪動態樣式
+            void bar.offsetWidth; 
+
+            if (type === 'error') {
+                bar.classList.add('error');
+            } else if (type === 'flash') {
+                bar.classList.add('flash');
+            }
+        }
+
+        // --- 5. 渲染與更新排行榜（依分數高低排序） ---
+        function renderLeaderboard(highlightTeam) {
+            const container = document.getElementById('score-board-container');
+            
+            // 將字典物件轉為陣列以便進行降序排序
+            let sortedTeams = Object.keys(teamsData).map(name => {
+                return { name: name, score: teamsData[name] };
+            });
+
+            // 根據分數由高到低排序 (b.score - a.score)
+            sortedTeams.sort((a, b) => b.score - a.score);
+
+            // 如果有資料，清空容器並重新填入
+            if (sortedTeams.length > 0) {
+                container.innerHTML = "";
+            } else {
+                return;
+            }
+
+            // 動態產生每一列 HTML 元件
+            sortedTeams.forEach(team => {
+                const row = document.createElement('div');
+                row.className = 'team-row';
+                row.id = `team-id-${encodeURIComponent(team.name)}`;
+                
+                // 補零排版（跟你的原設計一致，將分數補足成 3 位數以上，例如 000 或 900）
+                const formattedScore = String(team.score).padStart(3, '0');
+
+                row.innerHTML = `
+                    <div class="team-name">${escapeHTML(team.name)}</div>
+                    <div class="team-score">${formattedScore}</div>
+                `;
+                
+                container.appendChild(row);
+            });
+
+            // 如果本次掃描是「更新分數」，為該列添加黃色閃爍高亮特效
+            if (highlightTeam) {
+                const targetRow = document.getElementById(`team-id-${encodeURIComponent(highlightTeam)}`);
+                if (targetRow) {
+                    targetRow.classList.add('updated-highlight');
+                    setTimeout(() => {
+                        targetRow.classList.remove('updated-highlight');
+                    }, 1200); // 1.2 秒後還原淡色背景
+                }
+            }
+        }
+
+        // 防止 XSS 的文字安全轉義工具
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // 網頁載入完成後自動啟動
+        window.addEventListener('load', () => {
+            initScoreScanner();
+        });
+    </script>
+</body>
+</html>
+
