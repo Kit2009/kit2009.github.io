@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirTransfer Mesh Pro - 離線 P2P 傳輸網</title>
+
+  <!-- 內嵌極簡離線 JS 庫 (QR Code 生成與 LZ-String 壓縮) -->
+  <script>
+    var QRCode;!function(){function a(a,b){this._htOption={width:256,height:256,typeNumber:4,colorDark:"#000000",colorLight:"#ffffff",correctLevel:b.CorrectLevel.H},typeof b=="string"&&(b={text:b});if(b)for(var c in b)this._htOption[c]=b[c];typeof a=="string"&&(a=document.getElementById(a)),this._android=o(),this._el=a,this._oQRCode=null,this._oDrawing=new d(this._el,this._htOption),this._htOption.text&&this.makeCode(this._htOption.text)}function b(a,b){return a.indexOf(b)!=-1}function c(a,b){var c=a;return c.indexOf("?")!=-1&&(c=c.substring(0,c.indexOf("?"))),c.indexOf("#")!=-1&&(c=c.substring(0,c.indexOf("#"))),c.endsWith(b)}function d(a,b){this._el=a,this._htOption=b}function o(){var a=!1,b=navigator.userAgent;if(/android/i.test(b)){a=!0;var c=b.toString().match(/android\s([0-9\.]*)/i);c&&c[1]&&(a=parseFloat(c[1]))}return a}QRCode=a,QRCode.CorrectLevel={L:1,M:0,Q:3,H:2}}();
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+
+  <style>
+    /* 100% 純原生動態主題變數 */
+    :root[data-theme="dark"] {
+      --bg-dark: #0b0f19;
+      --panel-bg: rgba(22, 30, 46, 0.8);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --purple: #a855f7;
+      --emerald: #10b981;
+      --rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --input-bg: #030712;
+      --card-inner-bg: rgba(3, 7, 18, 0.4);
+      --radius: 16px;
+    }
+
+    :root[data-theme="light"] {
+      --bg-dark: #f8fafc;
+      --panel-bg: rgba(255, 255, 255, 0.9);
+      --panel-border: rgba(0, 0, 0, 0.08);
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --purple: #9333ea;
+      --emerald: #059669;
+      --rose: #e11d48;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --input-bg: #ffffff;
+      --card-inner-bg: #f1f5f9;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+
+    /* Header */
+    header { border-bottom: 1px solid var(--panel-border); background: var(--panel-bg); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 40; }
+    .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 16px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+    .logo-box { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--purple)); display: flex; align-items: center; justify-content: center; color: white; }
+    .logo-title { font-size: 1.15rem; font-weight: 700; background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .badge { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-size: 0.75rem; background: var(--card-inner-bg); color: var(--text-muted); border: 1px solid var(--panel-border); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+    .dot.active { background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+
+    /* Main Container */
+    main { max-width: 1200px; width: 100%; margin: 0 auto; padding: 20px 16px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    
+    .top-bar { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; background: var(--panel-bg); border: 1px solid var(--panel-border); padding: 16px 20px; border-radius: var(--radius); backdrop-filter: blur(8px); }
+    
+    .nickname-edit-box { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .nickname-input { font-weight: 700; color: var(--primary); font-size: 1.05rem; background: transparent; border: 1px dashed transparent; border-radius: 6px; padding: 2px 6px; }
+    .nickname-input:hover, .nickname-input:focus { border-color: var(--primary); background: var(--input-bg); outline: none; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; font-size: 0.82rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; transition: all 0.2s ease; text-decoration: none; color: white; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--purple)); box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25); }
+    .btn-primary:hover { opacity: 0.95; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-emerald { background: var(--emerald); }
+    .btn-emerald:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--card-inner-bg); color: var(--text-main); border: 1px solid var(--panel-border); }
+    .btn-secondary:hover { background: var(--input-bg); }
+
+    /* Grid Layout */
+    .mesh-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media(min-width: 900px) { .mesh-grid { grid-template-columns: 360px 1fr; } }
+
+    .card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 16px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 12px; font-weight: 700; font-size: 0.9rem; }
+
+    /* Drag & Drop Area */
+    .drop-zone { border: 2px dashed var(--panel-border); border-radius: var(--radius); padding: 28px 16px; text-align: center; cursor: pointer; background: var(--card-inner-bg); transition: all 0.2s ease; }
+    .drop-zone:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+
+    /* Multi-select Peering List */
+    .peer-card { background: var(--card-inner-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .target-group { background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 10px; max-height: 130px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .target-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+    .target-item:hover { background: var(--card-inner-bg); }
+    .target-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+
+    /* Progress & Queue */
+    .progress-box { background: var(--card-inner-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .progress-bar-bg { width: 100%; height: 8px; background: var(--input-bg); border-radius: 999px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(to right, var(--primary), var(--purple)); width: 0%; transition: width 0.15s ease; }
+
+    .file-queue-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--input-bg); border-radius: 8px; font-size: 0.78rem; font-family: monospace; }
+
+    /* Modals */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 24px; max-width: 500px; width: 100%; padding: 24px; display: flex; flex-direction: column; gap: 18px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+
+    .tab-bar { display: flex; border-bottom: 1px solid var(--panel-border); gap: 12px; font-size: 0.8rem; }
+    .tab-btn { padding: 8px 12px; background: none; border: none; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 600; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    textarea, input[type="text"] { width: 100%; background: var(--input-bg); border: 1px solid var(--panel-border); color: var(--text-main); border-radius: 10px; padding: 10px; font-size: 0.8rem; outline: none; }
+    textarea:focus, input[type="text"]:focus { border-color: var(--primary); }
+
+    .log-box { height: 110px; background: var(--input-bg); border: 1px solid var(--panel-border); border-radius: 12px; padding: 10px; font-family: monospace; font-size: 0.75rem; color: var(--text-muted); overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--panel-bg); border: 1px solid var(--panel-border); color: var(--text-main); padding: 12px 18px; border-radius: 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; z-index: 100; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+    .toast.active { transform: translateY(0); opacity: 1; }
+
+    .svg-icon { width: 18px; height: 18px; fill: currentColor; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-box">
+        <div class="logo-icon">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        </div>
+        <div>
+          <div class="logo-title">AirTransfer Mesh Pro</div>
+          <div style="font-size:0.68rem; color:var(--text-muted);">極致離線點對點共享網路</div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button onclick="toggleTheme()" class="btn btn-secondary" style="padding:6px 12px; font-size:0.75rem;">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
+          <span id="themeLabel">深色主題</span>
+        </button>
+
+        <div class="badge">
+          <div id="statusDot" class="dot"></div>
+          <span>連線節點: <strong id="connectedPeerCount" style="color:var(--text-main);">0</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Control Bar -->
+    <div class="top-bar">
+      <div>
+        <div style="font-size:0.72rem; color:var(--text-muted);">我的裝置識別碼與別名 (點擊名稱可重命名):</div>
+        <div class="nickname-edit-box">
+          <input type="text" id="myNicknameInput" class="nickname-input" value="我的裝置" onblur="updateMyNickname()" onkeydown="if(event.key==='Enter') this.blur()">
+          <span id="myDeviceId" style="font-family:monospace; font-size:0.75rem; color:var(--text-muted);">[ID]</span>
+        </div>
+      </div>
+      <button onclick="openAddPeerModal()" class="btn btn-primary">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>新增裝置配對 (Add Peer)</span>
+      </button>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="mesh-grid">
+      <!-- Left Column: Peer Network & Diagnostic -->
+      <section style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card">
+          <div class="card-header">
+            <span>連線裝置網路 (Connected Peers)</span>
+            <span id="peerCountLabel" style="font-size:0.75rem; color:var(--text-muted); font-family:monospace;">0 個節點</span>
+          </div>
+          <div id="peersContainer" style="display:flex; flex-direction:column; gap:10px; min-height:120px;">
+            <div id="noPeersNotice" style="border:1px dashed var(--panel-border); border-radius:12px; padding:24px; text-align:center; color:var(--text-muted); font-size:0.8rem;">
+              目前無任何已連線裝置<br>點擊上方「新增裝置配對」開始建立連接！
+            </div>
+          </div>
+        </div>
+
+        <!-- Transfer History Panel -->
+        <div class="card">
+          <div class="card-header">
+            <span>歷史傳輸紀錄庫</span>
+            <button onclick="clearHistory()" style="background:none; border:none; color:var(--text-muted); font-size:0.72rem; cursor:pointer;">清空</button>
+          </div>
+          <div id="historyList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
+            <div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:12px;">暫無歷史傳輸紀錄</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Text Clipboard & File Transfer -->
+      <section style="display:flex; flex-direction:column; gap:20px;">
+        <!-- P2P Text Clipboard -->
+        <div class="card">
+          <div class="card-header">
+            <span>跨裝置即時文字 / 剪貼簿分享</span>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <textarea id="textShareInput" style="height:64px;" placeholder="在此輸入文字、剪貼簿內容或網址連結..."></textarea>
+            <button onclick="sendTextShare()" class="btn btn-primary" style="white-space:nowrap; padding:0 20px;">發送文字</button>
+          </div>
+        </div>
+
+        <!-- File Transfer Panel -->
+        <div class="card">
+          <div class="card-header">
+            <span>批次檔案共享中心</span>
+          </div>
+
+          <!-- Dropzone (Multi-file) -->
+          <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
+            <svg class="svg-icon" style="width:36px; height:36px; color:var(--primary); margin-bottom:8px;" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+            <div style="font-size:0.85rem; font-weight:600;">點擊選擇多個檔案 或 拖曳至此處</div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">支援批次佇列發送．完全離線點對點傳遞</div>
+          </div>
+
+          <!-- Batch Queue Area -->
+          <div id="selectedFileInfo" style="display:none; background:var(--input-bg); padding:14px; border-radius:12px; border:1px solid var(--panel-border); flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.8rem; font-weight:600;">待發送檔案佇列:</span>
+              <button onclick="clearSelectedFiles()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.75rem;">清空佇列</button>
+            </div>
+            
+            <div id="fileQueueContainer" style="display:flex; flex-direction:column; gap:6px; max-height:120px; overflow-y:auto;"></div>
+
+            <!-- Target Peer Selector -->
+            <div style="border-top:1px solid var(--panel-border); padding-top:10px; display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted);">
+                <span>選擇接收目標對象:</span>
+                <div>
+                  <button onclick="selectAllTargets(true)" style="background:none; border:none; color:var(--primary); cursor:pointer;">全選</button> |
+                  <button onclick="selectAllTargets(false)" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">取消</button>
+                </div>
+              </div>
+              <div id="targetPeersCheckboxGroup" class="target-group">
+                <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">無連線裝置</div>
+              </div>
+            </div>
+
+            <button id="btnBroadcastFile" onclick="sendSelectedFileQueue()" disabled class="btn btn-primary" style="width:100%;">
+              <span id="sendBtnText">請選擇傳送裝置與檔案</span>
+            </button>
+          </div>
+
+          <!-- Progress -->
+          <div id="progressArea" class="progress-box" style="display:none;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+              <span id="progressStatusText" style="color:var(--primary); font-weight:600;">正在傳輸...</span>
+              <span id="progressPercent" style="font-family:monospace;">0%</span>
+            </div>
+            <div class="progress-bar-bg"><div id="progressBar" class="progress-bar-fill"></div></div>
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
+              <span id="transferSpeed">0 KB/s</span>
+              <span id="timeRemaining">計算中...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="card">
+          <div class="card-header">
+            <span>系統日誌</span>
+            <button onclick="clearLogs()" style="background:none; border:none; color:var(--text-muted); font-size:0.72rem; cursor:pointer;">清除</button>
+          </div>
+          <div id="logBox" class="log-box">
+            <div>[系統] AirTransfer Mesh Pro 升級版已啟動。100% 離線運作中。</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Pairing Modal -->
+  <div id="addPeerModal" class="modal-overlay">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border); padding-bottom:12px;">
+        <span style="font-weight:700; font-size:0.9rem;">新增點對點裝置配對</span>
+        <button onclick="closeAddPeerModal()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem;">✕</button>
+      </div>
+
+      <div class="tab-bar">
+        <button id="tabMethodQr" onclick="switchMethodTab('qr')" class="tab-btn active">方式 A: 動態 QR Code</button>
+        <button id="tabMethodText" onclick="switchMethodTab('text')" class="tab-btn">方式 B: 文字代碼</button>
+        <button id="tabMethodLink" onclick="switchMethodTab('link')" class="tab-btn">方式 C: 邀請網址</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:var(--input-bg); padding:4px; border-radius:12px;">
+        <button id="modalRoleInitBtn" onclick="setModalRole('initiator')" class="btn btn-primary" style="padding:6px; font-size:0.75rem;">我是發起端</button>
+        <button id="modalRoleJoinBtn" onclick="setModalRole('joiner')" class="btn btn-secondary" style="padding:6px; font-size:0.75rem;">我是回應端</button>
+      </div>
+
+      <!-- Initiator Panel -->
+      <div id="initiatorPanel" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="font-size:0.75rem; color:var(--text-muted);">1. 生成本次連線 Offer 信令代碼。</div>
+        <button onclick="generateModalOffer()" class="btn btn-primary">生成 Offer 信令</button>
+
+        <div id="initiatorOfferArea" style="display:none; flex-direction:column; gap:10px;">
+          <div id="qrOfferContainer" style="background:white; padding:12px; border-radius:12px; display:flex; flex-direction:column; align-items:center; gap:8px; margin:0 auto;">
+            <div id="modalQrOffer"></div>
+            <div id="modalQrOfferInfo" style="font-size:0.65rem; font-family:monospace; color:#0f172a; font-weight:700;">QR 準備中...</div>
+          </div>
+
+          <div id="linkOfferContainer" style="display:none; flex-direction:column; gap:4px;">
+            <label style="font-size:0.75rem; color:var(--text-muted);">邀請網址:</label>
+            <div style="display:flex; gap:6px;">
+              <input id="modalOfferLinkInput" readonly type="text">
+              <button onclick="copyToClipboard('modalOfferLinkInput')" class="btn btn-primary" style="padding:6px 12px; font-size:0.7rem;">複製</button>
+            </div>
+          </div>
+
+          <textarea id="modalOfferText" readonly style="height:60px;" placeholder="Offer 信令..."></textarea>
+
+          <div style="border-top:1px solid var(--panel-border); padding-top:10px; display:flex; flex-direction:column; gap:8px;">
+            <label style="font-size:0.75rem; color:var(--primary);">2. 貼入回應端的 Answer 信令:</label>
+            <textarea id="modalAnswerInput" style="height:60px;" placeholder="在此貼上 Answer 代碼..."></textarea>
+            <div style="display:flex; gap:8px;">
+              <button onclick="completeInitiatorConnection()" class="btn btn-emerald" style="flex:1;">完成連線</button>
+              <button onclick="openScanner('modalAnswerInput')" class="btn btn-secondary">掃描 QR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Joiner Panel -->
+      <div id="joinerPanel" style="display:none; flex-direction:column; gap:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="font-size:0.75rem; color:var(--text-muted);">1. 貼入發起端的 Offer 信令:</label>
+          <button onclick="openScanner('modalOfferInput')" style="background:none; border:none; color:var(--primary); font-size:0.75rem; cursor:pointer;">掃描 QR</button>
+        </div>
+        <textarea id="modalOfferInput" style="height:70px;" placeholder="在此貼上 Offer 代碼..."></textarea>
+        <button onclick="generateModalAnswer()" class="btn" style="background:var(--purple);">生成 Answer 回應碼</button>
+
+        <div id="joinerAnswerArea" style="display:none; flex-direction:column; gap:10px; border-top:1px solid var(--panel-border); padding-top:10px;">
+          <textarea id="modalAnswerText" readonly style="height:60px;"></textarea>
+          <div id="qrAnswerContainer" style="background:white; padding:12px; border-radius:12px; display:flex; flex-direction:column; align-items:center; gap:8px; margin:0 auto;">
+            <div id="modalQrAnswer"></div>
+            <div id="modalQrAnswerInfo" style="font-size:0.65rem; font-family:monospace; color:#0f172a; font-weight:700;">QR 準備中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Scanner Modal -->
+  <div id="scannerModal" class="modal-overlay">
+    <div class="modal-card" style="max-width:400px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:700; font-size:0.9rem;">動態 QR Code 掃描器</span>
+        <button onclick="closeScanner()" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">✕</button>
+      </div>
+      <div id="reader" style="border-radius:12px; overflow:hidden; background:#000;"></div>
+      <div class="progress-box">
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+          <span id="scanStatusText" style="color:var(--text-muted);">請對準動態二維碼...</span>
+          <span id="scanProgressText" style="font-family:monospace; color:var(--primary);">0%</span>
+        </div>
+        <div class="progress-bar-bg"><div id="scanProgressBar" class="progress-bar-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <span id="toastMsg">提示訊息</span>
+  </div>
+
+  <script>
+    const rtcConfig = { iceServers: [] };
+    const myDeviceId = "Peer-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    let myNickname = "我的裝置";
+
+    const peersMap = new Map();
+    let tempPeerConnection = null;
+    let tempPeerId = null;
+
+    let selectedFilesQueue = [];
+    let html5QrcodeScanner = null;
+    let targetInputForScan = null;
+
+    let activeQrInterval = null;
+    let scannedChunksMap = new Map();
+
+    let receivedChunks = [];
+    let receivedSize = 0;
+    let incomingFileInfo = null;
+
+    const CHUNK_SIZE = 64 * 1024;
+    // 調整切片長度與容錯率讓 QR Code 更細密、容納更多資料
+    const QR_CHUNK_LEN = 160;
+
+    window.onload = function() {
+      document.getElementById('myDeviceId').innerText = `[${myDeviceId}]`;
+      setupDragAndDrop();
+      log(`Pro 服務已發動，識別碼: ${myDeviceId}`);
+      checkUrlHashInvite();
+      startPingInterval();
+    };
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      document.getElementById('themeLabel').innerText = next === 'dark' ? '深色主題' : '淺色主題';
+    }
+
+    function updateMyNickname() {
+      const val = document.getElementById('myNicknameInput').value.trim();
+      if (val) {
+        myNickname = val;
+        broadcastSignal({ type: 'nickname-update', senderId: myDeviceId, nickname: myNickname });
+        showToast('別名已更新！');
+      }
+    }
+
+    function log(msg, type = 'info') {
+      const logBox = document.getElementById('logBox');
+      const timeStr = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      if (type === 'error') div.style.color = 'var(--rose)';
+      if (type === 'success') div.style.color = 'var(--emerald)';
+      div.innerText = `[${timeStr}] ${msg}`;
+      logBox.appendChild(div);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.add('active');
+      setTimeout(() => toast.classList.remove('active'), 3000);
+    }
+
+    function openAddPeerModal() {
+      stopDynamicQRCode();
+      document.getElementById('addPeerModal').classList.add('active');
+      setModalRole('initiator');
+    }
+
+    function closeAddPeerModal() {
+      stopDynamicQRCode();
+      document.getElementById('addPeerModal').classList.remove('active');
+    }
+
+    function setModalRole(role) {
+      const initBtn = document.getElementById('modalRoleInitBtn');
+      const joinBtn = document.getElementById('modalRoleJoinBtn');
+      const initPanel = document.getElementById('initiatorPanel');
+      const joinPanel = document.getElementById('joinerPanel');
+
+      if (role === 'initiator') {
+        initBtn.className = "btn btn-primary";
+        joinBtn.className = "btn btn-secondary";
+        initPanel.style.display = 'flex';
+        joinPanel.style.display = 'none';
+      } else {
+        joinBtn.className = "btn btn-primary";
+        initBtn.className = "btn btn-secondary";
+        joinPanel.style.display = 'flex';
+        initPanel.style.display = 'none';
+      }
+    }
+
+    function switchMethodTab(method) {
+      document.getElementById('tabMethodQr').classList.toggle('active', method === 'qr');
+      document.getElementById('tabMethodText').classList.toggle('active', method === 'text');
+      document.getElementById('tabMethodLink').classList.toggle('active', method === 'link');
+
+      const qrOffer = document.getElementById('qrOfferContainer');
+      const qrAnswer = document.getElementById('qrAnswerContainer');
+      const linkOffer = document.getElementById('linkOfferContainer');
+
+      if (method === 'qr') {
+        if(qrOffer) qrOffer.style.display = 'flex';
+        if(qrAnswer) qrAnswer.style.display = 'flex';
+        if(linkOffer) linkOffer.style.display = 'none';
+      } else if (method === 'link') {
+        if(qrOffer) qrOffer.style.display = 'none';
+        if(qrAnswer) qrAnswer.style.display = 'none';
+        if(linkOffer) linkOffer.style.display = 'flex';
+      } else {
+        if(qrOffer) qrOffer.style.display = 'none';
+        if(qrAnswer) qrAnswer.style.display = 'none';
+        if(linkOffer) linkOffer.style.display = 'none';
+      }
+    }
+
+    function checkUrlHashInvite() {
+      if (window.location.hash.startsWith('#offer=')) {
+        const rawOffer = window.location.hash.replace('#offer=', '');
+        openAddPeerModal();
+        setModalRole('joiner');
+        document.getElementById('modalOfferInput').value = decodeURIComponent(rawOffer);
+        showToast('已由邀請連結載入 Offer 代碼！');
+      }
+    }
+
+    function createNewPeerConnection(peerId) {
+      const pc = new RTCPeerConnection(rtcConfig);
+      pc.oniceconnectionstatechange = () => {
+        log(`Peer [${peerId}] 狀態: ${pc.iceConnectionState}`);
+        if (['disconnected', 'failed', 'closed'].includes(pc.iceConnectionState)) {
+          peersMap.delete(peerId);
+          updatePeersUI();
+        }
+      };
+      pc.ondatachannel = (e) => setupDataChannelForPeer(peerId, e.channel);
+      return pc;
+    }
+
+    function setupDataChannelForPeer(peerId, dc) {
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        log(`與 [${peerId}] 點對點通道已開啟！`, 'success');
+        peersMap.set(peerId, { id: peerId, nickname: peerId, pc: tempPeerConnection, dc: dc, state: 'connected', rtt: 0 });
+        dc.send(JSON.stringify({ type: 'nickname-update', senderId: myDeviceId, nickname: myNickname }));
+        updatePeersUI();
+        closeAddPeerModal();
+        showToast(`已成功連線: ${peerId}`);
+      };
+      dc.onclose = () => { peersMap.delete(peerId); updatePeersUI(); };
+      dc.onmessage = (e) => handleIncomingData(peerId, e.data);
+    }
+
+    async function generateModalOffer() {
+      tempPeerId = "Peer-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+      tempPeerConnection = createNewPeerConnection(tempPeerId);
+
+      const dc = tempPeerConnection.createDataChannel("meshFileTransfer");
+      setupDataChannelForPeer(tempPeerId, dc);
+
+      tempPeerConnection.onicecandidate = (e) => {
+        if (!e.candidate) {
+          const payload = JSON.stringify({ senderId: myDeviceId, sdp: tempPeerConnection.localDescription });
+          const compressed = LZString.compressToEncodedURIComponent(payload);
+          document.getElementById('modalOfferText').value = compressed;
+          document.getElementById('modalOfferLinkInput').value = `${window.location.origin}${window.location.pathname}#offer=${encodeURIComponent(compressed)}`;
+          document.getElementById('initiatorOfferArea').style.display = 'flex';
+          startDynamicQRCode('modalQrOffer', 'modalQrOfferInfo', compressed);
+        }
+      };
+      const offer = await tempPeerConnection.createOffer();
+      await tempPeerConnection.setLocalDescription(offer);
+    }
+
+    async function completeInitiatorConnection() {
+      const rawAnswer = document.getElementById('modalAnswerInput').value.trim();
+      if (!rawAnswer) return showToast('請貼入 Answer 代碼！');
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(rawAnswer);
+        const payload = JSON.parse(decompressed || rawAnswer);
+        await tempPeerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+      } catch (err) {
+        showToast('Answer 格式錯誤！');
+      }
+    }
+
+    async function generateModalAnswer() {
+      const rawOffer = document.getElementById('modalOfferInput').value.trim();
+      if (!rawOffer) return showToast('請貼上 Offer 代碼！');
+      try {
+        const decompressed = LZString.decompressFromEncodedURIComponent(rawOffer);
+        const payload = JSON.parse(decompressed || rawOffer);
+        tempPeerId = payload.senderId || "Peer-REMOTE";
+        tempPeerConnection = createNewPeerConnection(tempPeerId);
+
+        tempPeerConnection.onicecandidate = (e) => {
+          if (!e.candidate) {
+            const answerPayload = JSON.stringify({ senderId: myDeviceId, sdp: tempPeerConnection.localDescription });
+            const compressed = LZString.compressToEncodedURIComponent(answerPayload);
+            document.getElementById('modalAnswerText').value = compressed;
+            document.getElementById('joinerAnswerArea').style.display = 'flex';
+            startDynamicQRCode('modalQrAnswer', 'modalQrAnswerInfo', compressed);
+          }
+        };
+        await tempPeerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+        const answer = await tempPeerConnection.createAnswer();
+        await tempPeerConnection.setLocalDescription(answer);
+      } catch (err) {
+        showToast('Offer 無效！');
+      }
+    }
+
+    function updatePeersUI() {
+      const connectedPeers = Array.from(peersMap.values()).filter(p => p.state === 'connected');
+      document.getElementById('connectedPeerCount').innerText = connectedPeers.length;
+      document.getElementById('peerCountLabel').innerText = `${connectedPeers.length} 個節點`;
+      document.getElementById('statusDot').className = connectedPeers.length > 0 ? 'dot active' : 'dot';
+
+      const peersContainer = document.getElementById('peersContainer');
+      const targetGroup = document.getElementById('targetPeersCheckboxGroup');
+      
+      peersContainer.innerHTML = '';
+      targetGroup.innerHTML = '';
+
+      if (connectedPeers.length === 0) {
+        peersContainer.innerHTML = `<div id="noPeersNotice" style="border:1px dashed var(--panel-border); border-radius:12px; padding:24px; text-align:center; color:var(--text-muted); font-size:0.8rem;">目前無任何已連線裝置<br>點擊上方「新增裝置配對」開始建立連接！</div>`;
+        targetGroup.innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">無連線裝置</div>';
+      } else {
+        connectedPeers.forEach(peer => {
+          // Left peer card
+          const card = document.createElement('div');
+          card.className = 'peer-card';
+          card.innerHTML = `
+            <div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">${peer.nickname}</div>
+              <div style="font-family:monospace; font-size:0.7rem; color:var(--text-muted);">${peer.id}</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:0.7rem; font-family:monospace; color:var(--emerald);">RTT: ${peer.rtt || '<10'}ms</span>
+            </div>
+          `;
+          peersContainer.appendChild(card);
+
+          // Checkbox for target group
+          const item = document.createElement('label');
+          item.className = 'target-item';
+          item.innerHTML = `<input type="checkbox" value="${peer.id}" checked onchange="validateTargetSelection()"> <span>${peer.nickname} <small style="color:var(--text-muted)">(${peer.id})</small></span>`;
+          targetGroup.appendChild(item);
+        });
+      }
+      validateTargetSelection();
+    }
+
+    function selectAllTargets(select) {
+      document.querySelectorAll('#targetPeersCheckboxGroup input[type="checkbox"]').forEach(cb => cb.checked = select);
+      validateTargetSelection();
+    }
+
+    function validateTargetSelection() {
+      const cbs = document.querySelectorAll('#targetPeersCheckboxGroup input[type="checkbox"]:checked');
+      const btn = document.getElementById('btnBroadcastFile');
+      if (selectedFilesQueue.length > 0 && cbs.length > 0) {
+        btn.disabled = false;
+        document.getElementById('sendBtnText').innerText = `傳送 ${selectedFilesQueue.length} 個檔案至選取裝置 (${cbs.length} 台)`;
+      } else {
+        btn.disabled = true;
+        document.getElementById('sendBtnText').innerText = selectedFilesQueue.length > 0 ? '請勾選接收裝置' : '請選擇傳送裝置與檔案';
+      }
+    }
+
+    /* P2P Messaging & Ping Diagnostics */
+    function broadcastSignal(obj) {
+      const str = JSON.stringify(obj);
+      peersMap.forEach(p => { if (p.dc && p.dc.readyState === 'open') p.dc.send(str); });
+    }
+
+    function sendTextShare() {
+      const input = document.getElementById('textShareInput');
+      const text = input.value.trim();
+      if (!text) return showToast('請輸入文字內容！');
+      broadcastSignal({ type: 'text-share', senderId: myDeviceId, senderNick: myNickname, text: text });
+      addHistoryItem('text', `[發送文字] ${text.substring(0,30)}...`, text);
+      input.value = '';
+      showToast('文字已廣播發送！');
+    }
+
+    function startPingInterval() {
+      setInterval(() => {
+        const now = Date.now();
+        peersMap.forEach(p => {
+          if (p.dc && p.dc.readyState === 'open') {
+            p.dc.send(JSON.stringify({ type: 'ping', time: now }));
+          }
+        });
+      }, 4000);
+    }
+
+    /* File Batch Processing */
+    function setupDragAndDrop() {
+      const dropZone = document.querySelector('.drop-zone');
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
+        dropZone.addEventListener(eName, (e) => { e.preventDefault(); e.stopPropagation(); });
+      });
+      dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleFiles(Array.from(e.dataTransfer.files));
+      });
+    }
+
+    function handleFileSelect(e) { if (e.target.files.length > 0) handleFiles(Array.from(e.target.files)); }
+    function handleFiles(files) {
+      selectedFilesQueue = files;
+      const container = document.getElementById('fileQueueContainer');
+      container.innerHTML = '';
+      files.forEach((f, i) => {
+        const div = document.createElement('div');
+        div.className = 'file-queue-item';
+        div.innerHTML = `<span>${i+1}. ${f.name}</span><span>${formatBytes(f.size)}</span>`;
+        container.appendChild(div);
+      });
+      document.getElementById('selectedFileInfo').style.display = 'flex';
+      validateTargetSelection();
+    }
+
+    function clearSelectedFiles() {
+      selectedFilesQueue = [];
+      document.getElementById('fileInput').value = '';
+      document.getElementById('selectedFileInfo').style.display = 'none';
+      validateTargetSelection();
+    }
+
+    async function sendSelectedFileQueue() {
+      const checkedBoxes = document.querySelectorAll('#targetPeersCheckboxGroup input[type="checkbox"]:checked');
+      const targetIds = Array.from(checkedBoxes).map(cb => cb.value);
+      const targetPeers = targetIds.map(id => peersMap.get(id)).filter(p => p && p.dc && p.dc.readyState === 'open');
+
+      for (let idx = 0; idx < selectedFilesQueue.length; idx++) {
+        const file = selectedFilesQueue[idx];
+        showProgress(`發送 (${idx + 1}/${selectedFilesQueue.length}): ${file.name}`);
+        
+        const header = JSON.stringify({ type: 'file-header', name: file.name, size: file.size, fileType: file.type });
+        targetPeers.forEach(p => p.dc.send(header));
+
+        await sendSingleFilePromise(file, targetPeers);
+        addHistoryItem('file', `[發送檔案] ${file.name}`, null, file);
+      }
+      log('全數佇列檔案發送完成！', 'success');
+      showToast('所有檔案發送成功！');
+      clearSelectedFiles();
+      document.getElementById('progressArea').style.display = 'none';
+    }
+
+    function sendSingleFilePromise(file, targetPeers) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        let offset = 0;
+        reader.onload = (e) => {
+          targetPeers.forEach(p => p.dc.send(e.target.result));
+          offset += e.target.result.byteLength;
+          updateProgressUI(offset, file.size);
+          if (offset < file.size) readNextChunk();
+          else resolve();
+        };
+        function readNextChunk() {
+          reader.readAsArrayBuffer(file.slice(offset, offset + CHUNK_SIZE));
+        }
+        readNextChunk();
+      });
+    }
+
+    /* Data Channel Listener */
+    function handleIncomingData(peerId, data) {
+      if (typeof data === 'string') {
+        try {
+          const msg = JSON.parse(data);
+          if (msg.type === 'nickname-update') {
+            const peer = peersMap.get(peerId);
+            if (peer) { peer.nickname = msg.nickname; updatePeersUI(); }
+          } else if (msg.type === 'ping') {
+            const peer = peersMap.get(peerId);
+            if (peer && peer.dc) peer.dc.send(JSON.stringify({ type: 'pong', time: msg.time }));
+          } else if (msg.type === 'pong') {
+            const peer = peersMap.get(peerId);
+            if (peer) { peer.rtt = Date.now() - msg.time; updatePeersUI(); }
+          } else if (msg.type === 'text-share') {
+            addHistoryItem('text', `[${msg.senderNick}] ${msg.text}`, msg.text);
+            showToast(`收到來自 ${msg.senderNick} 的文字訊息！`);
+          } else if (msg.type === 'file-header') {
+            incomingFileInfo = msg; receivedChunks = []; receivedSize = 0;
+            showProgress(`接收中: ${msg.name}`);
+          }
+        } catch(e) {}
+        return;
+      }
+      if (data instanceof ArrayBuffer) {
+        receivedChunks.push(data);
+        receivedSize += data.byteLength;
+        updateProgressUI(receivedSize, incomingFileInfo.size);
+        if (receivedSize >= incomingFileInfo.size) finishReceivingFile();
+      }
+    }
+
+    function finishReceivingFile() {
+      const blob = new Blob(receivedChunks, { type: incomingFileInfo.fileType || 'application/octet-stream' });
+      addHistoryItem('file', `[接收檔案] ${incomingFileInfo.name}`, null, blob, incomingFileInfo.name);
+      showToast(`接收完成: ${incomingFileInfo.name}`);
+      document.getElementById('progressArea').style.display = 'none';
+    }
+
+    /* History Management */
+    function addHistoryItem(type, label, rawText = null, blobOrFile = null, fileName = '') {
+      const list = document.getElementById('historyList');
+      if (list.children.length === 1 && list.children[0].innerText.includes('暫無')) list.innerHTML = '';
+
+      const div = document.createElement('div');
+      div.style.cssText = "background:var(--input-bg); padding:8px 12px; border-radius:8px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--panel-border);";
+      
+      if (type === 'text') {
+        div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${label}</span>
+          <button onclick="navigator.clipboard.writeText('${rawText.replace(/'/g, "\\'")}'); showToast('已複製到剪貼簿！');" class="btn btn-secondary" style="padding:4px 8px; font-size:0.68rem;">複製</button>`;
+      } else {
+        const url = URL.createObjectURL(blobOrFile);
+        const name = fileName || blobOrFile.name;
+        div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${label}</span>
+          <a href="${url}" download="${name}" class="btn btn-emerald" style="padding:4px 8px; font-size:0.68rem; text-decoration:none;">下載</a>`;
+      }
+      list.prepend(div);
+    }
+
+    function clearHistory() {
+      document.getElementById('historyList').innerHTML = '<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:12px;">暫無歷史傳輸紀錄</div>';
+    }
+
+    /* Progress UI */
+    function showProgress(msg) {
+      document.getElementById('progressArea').style.display = 'flex';
+      document.getElementById('progressStatusText').innerText = msg;
+    }
+
+    function updateProgressUI(current, total) {
+      const pct = Math.min(100, Math.round((current / total) * 100));
+      document.getElementById('progressBar').style.width = `${pct}%`;
+      document.getElementById('progressPercent').innerText = `${pct}%`;
+    }
+
+    /* Dynamic QR Code & Scanning */
+    function startDynamicQRCode(containerId, infoId, fullData) {
+      stopDynamicQRCode();
+      const chunks = [];
+      for (let i = 0; i < fullData.length; i += QR_CHUNK_LEN) chunks.push(fullData.slice(i, i + QR_CHUNK_LEN));
+      let idx = 0;
+      activeQrInterval = setInterval(() => {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        // 改用 CorrectLevel.L 讓 QR 點陣更細疏，並將速度放緩至 800ms
+        new QRCode(container, { 
+          text: `p|${idx + 1}|${chunks.length}|${chunks[idx]}`, 
+          width: 140, 
+          height: 140,
+          correctLevel: QRCode.CorrectLevel.L
+        });
+        document.getElementById(infoId).innerText = `動態 QR (${idx + 1}/${chunks.length})`;
+        idx = (idx + 1) % chunks.length;
+      }, 800);
+    }
+
+    function stopDynamicQRCode() { if (activeQrInterval) clearInterval(activeQrInterval); }
+
+    function openScanner(targetId) {
+      targetInputForScan = targetId; scannedChunksMap.clear();
+      document.getElementById('scannerModal').classList.add('active');
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 200 }, (text) => {
+        if (text.startsWith('p|')) {
+          const [, idx, total, data] = text.split('|');
+          scannedChunksMap.set(parseInt(idx), data);
+          const pct = Math.round((scannedChunksMap.size / parseInt(total)) * 100);
+          document.getElementById('scanProgressBar').style.width = `${pct}%`;
+          document.getElementById('scanProgressText').innerText = `${pct}%`;
+          if (scannedChunksMap.size === parseInt(total)) {
+            let res = '';
+            for (let i = 1; i <= parseInt(total); i++) res += scannedChunksMap.get(i);
+            document.getElementById(targetInputForScan).value = res;
+            closeScanner();
+          }
+        } else {
+          document.getElementById(targetInputForScan).value = text;
+          closeScanner();
+        }
+      }).catch(() => closeScanner());
+    }
+
+    function closeScanner() {
+      if (html5QrcodeScanner) html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear());
+      document.getElementById('scannerModal').classList.remove('active');
+    }
+
+    function copyToClipboard(id) {
+      const el = document.getElementById(id);
+      el.select(); document.execCommand('copy');
+      showToast('已複製！');
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function clearLogs() { document.getElementById('logBox').innerHTML = '<div>日誌已清除。</div>'; }
+  </script>
+</body>
+</html>
