@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 關鍵修復 1 (Error 153)：確保跨來源請求正確傳送 Referer 來源標頭，避免 YouTube 拒絕嵌入播放 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>AETHER-9000 // 專業母帶級雙引擎背景音樂控台</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts：思源宋體 (Noto Serif TC)、工程等寬字體 (JetBrains Mono) 與無襯線字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- 引入 Font Awesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --chassis-bg: #080a0e;
+            --panel-surface: #0f1218;
+            --panel-elevated: #151a23;
+            --border-hairline: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00e5ff;
+            --accent-amber: #ffab00;
+            --accent-crimson: #ff2a5f;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: var(--chassis-bg);
+            color: #e2e8f0;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            user-select: none;
+            /* 精密工程背景網格 */
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 229, 255, 0.06) 0%, transparent 55%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+        }
+
+        /* 宋體專用類別：嚴格套用於所有歌曲名稱與檔案名稱 */
+        .font-songti {
+            font-family: "Noto Serif TC", "Songti TC", "STSong", "PMingLiU", "SimSun", serif;
+            letter-spacing: 0.05em;
+        }
+
+        /* 工程儀表等寬字體 */
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* CNC 陽極氧化拉絲金屬機殼外框 */
+        .console-chassis {
+            background: linear-gradient(180deg, #131720 0%, #0c0f15 100%);
+            border: 1px solid rgba(255, 255, 255, 0.11);
+            box-shadow: 
+                0 30px 70px -15px rgba(0, 0, 0, 0.85),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+                inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 內嵌式儀表模組凹槽 */
+        .rack-module {
+            background: #0a0c10;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.75);
+        }
+
+        /* 實體硬體微動按鍵 (Tactile Hardware Key) */
+        .hw-btn {
+            background: linear-gradient(180deg, #1d2330 0%, #131720 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 
+                0 3px 6px rgba(0, 0, 0, 0.65),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hw-btn:hover {
+            background: linear-gradient(180deg, #242b3b 0%, #171c27 100%);
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+        .hw-btn:active {
+            transform: translateY(1.5px);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), inset 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 發光啟動狀態按鍵 */
+        .hw-btn-active-cyan {
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.18) 0%, rgba(0, 229, 255, 0.06) 100%);
+            border-color: rgba(0, 229, 255, 0.55);
+            color: #00e5ff;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2), inset 0 1px 0 rgba(0, 229, 255, 0.3);
+        }
+
+        /* 精密推桿滑軌 (Fader Slider) */
+        input[type="range"].studio-fader {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"].studio-fader::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 2px;
+            background: #050608;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9);
+        }
+        input[type="range"].studio-fader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 18px;
+            width: 12px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, #f8fafc 0%, #94a3b8 100%);
+            border: 1px solid #0f172a;
+            margin-top: -7px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.85), inset 0 1px 0 #ffffff;
+            transition: transform 0.1s ease;
+        }
+        input[type="range"].studio-fader:hover::-webkit-slider-thumb {
+            transform: scaleY(1.1);
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+        }
+
+        /* 自訂機架捲軸 */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #07090c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232a38;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333d52;
+        }
+
+        /* 機架曲目列 */
+        .rack-slot {
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.18s ease;
+        }
+        .rack-slot:hover {
+            background: rgba(255, 255, 255, 0.045);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+        .rack-slot.active-cyan {
+            background: linear-gradient(90deg, rgba(0, 229, 255, 0.12) 0%, rgba(0, 229, 255, 0.02) 100%);
+            border-color: rgba(0, 229, 255, 0.45);
+        }
+        .rack-slot.active-amber {
+            background: linear-gradient(90deg, rgba(255, 171, 0, 0.12) 0%, rgba(255, 171, 0, 0.02) 100%);
+            border-color: rgba(255, 171, 0, 0.45);
+        }
+
+        /* 拖放匯入區高亮 */
+        .drop-zone-active {
+            border-color: #00e5ff !important;
+            background: rgba(0, 229, 255, 0.08) !important;
+        }
+
+        /* 機殼四角六角螺絲裝飾 */
+        .hex-screw {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #475569, #0f172a);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
+        }
+
+        /* 音頻柱狀動畫 */
+        @keyframes bar-pulse {
+            0%, 100% { height: 3px; }
+            50% { height: 13px; }
+        }
+        .eq-active .b1 { animation: bar-pulse 0.7s ease-in-out infinite; }
+        .eq-active .b2 { animation: bar-pulse 0.5s ease-in-out infinite 0.15s; }
+        .eq-active .b3 { animation: bar-pulse 0.8s ease-in-out infinite 0.3s; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 md:p-8">
+
+    <!-- 主控台機殼 (AETHER-9000 MASTER CONSOLE) -->
+    <main class="w-full max-w-6xl console-chassis rounded-2xl p-4 sm:p-6 md:p-7 relative">
+        
+        <!-- 機殼四角精密螺絲 -->
+        <div class="hex-screw absolute top-3 left-3"></div>
+        <div class="hex-screw absolute top-3 right-3"></div>
+        <div class="hex-screw absolute bottom-3 left-3"></div>
+        <div class="hex-screw absolute bottom-3 right-3"></div>
+
+        <!-- 頂部遙測狀態列 (TELEMETRY HEADER BAR) -->
+        <header class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-white/10 px-2">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-lg bg-[#090b0f] border border-cyan-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.15)]">
+                    <i class="fa-solid fa-sliders text-cyan-400 text-base"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-mono-tech text-sm sm:text-base font-bold tracking-wider text-white">
+                            AETHER-9000 <span class="text-cyan-400 font-normal">// MASTER CONSOLE</span>
+                        </h1>
+                        <span class="hidden sm:inline-block font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+                            REV 4.2
+                        </span>
+                    </div>
+                    <p class="font-mono-tech text-[11px] text-slate-400 tracking-wide">
+                        DUAL-ENGINE AUDIO ROUTER &bull; LOCAL PCM / YOUTUBE STREAM
+                    </p>
+                </div>
+            </div>
+
+            <!-- 右側系統狀態燈號與監看視窗開關 -->
+            <div class="flex items-center gap-2.5">
+                <!-- 協議環境檢測徽章 (偵測 file:// 提示) -->
+                <div id="protocol-badge" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#080a0e] border border-white/10 font-mono-tech text-[10px] text-slate-400">
+                    <span id="protocol-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span id="protocol-text">HTTP/ORIGIN OK</span>
+                </div>
+
+                <!-- YT 監看視窗切換鍵 -->
+                <button id="btn-toggle-monitor" class="hw-btn px-3 py-1.5 rounded-lg font-mono-tech text-[11px] text-amber-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-tv text-xs"></i>
+                    <span id="monitor-btn-label">YT MONITOR: AUTO</span>
+                </button>
+
+                <!-- 主系統運轉 LED -->
+                <div class="px-3 py-1.5 rounded-lg bg-[#080a0e] border border-white/10 flex items-center gap-2 font-mono-tech text-[11px]">
+                    <span id="master-led" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                    <span id="master-status-text" class="text-slate-300">STANDBY</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 控台核心雙區佈局：左側主遙測與走帶控制 (7 欄) / 右側機架曲目庫 (5 欄) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+            <!-- ==================== 左側：主顯示幕、頻譜遙測儀與實體走帶控制 ==================== -->
+            <section class="lg:col-span-7 flex flex-col justify-between space-y-5">
+                
+                <!-- OLED 主資訊顯示幕 + 雙聲道 LED 遙測頻譜儀 -->
+                <div class="rack-module rounded-xl p-4 sm:p-5 relative overflow-hidden">
+                    <!-- 頂部訊號路由指示列 -->
+                    <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 mb-3 pb-2 border-b border-white/5">
+                        <div class="flex items-center gap-2">
+                            <span id="ch-badge" class="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold">
+                                CH-A // LOCAL PCM
+                            </span>
+                            <span id="sample-rate-label" class="text-slate-500">48.0 kHz / 24-BIT</span>
+                        </div>
+                        <span id="track-index-display" class="text-cyan-400">SLOT 01 / 04</span>
+                    </div>
+
+                    <!-- 曲目主標題 (嚴格使用宋體 font-songti) 與來源副標 -->
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] font-mono-tech text-slate-500 uppercase tracking-widest mb-1">
+                                ACTIVE PROGRAM TITLE
+                            </div>
+                            <h2 id="main-track-title" class="font-songti text-2xl sm:text-3xl font-bold text-white truncate leading-snug">
+                                我
+                            </h2>
+                            <p id="main-track-subtitle" class="font-mono-tech text-xs text-slate-400 mt-1 truncate">
+                                SOURCE: 我.mp3
+                            </p>
+                        </div>
+
+                        <!-- 訊號源專屬徽章圖示 -->
+                        <div id="source-icon-box" class="w-12 h-12 rounded-xl bg-[#11151e] border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400 shadow-inner">
+                            <i id="source-icon" class="fa-solid fa-wave-square text-lg"></i>
+                        </div>
+                    </div>
+
+                    <!-- 即時頻譜與雙聲道 VU 峰值表 Canvas -->
+                    <div class="relative w-full h-32 sm:h-36 rounded-lg bg-[#05070a] border border-white/10 overflow-hidden">
+                        <canvas id="telemetry-canvas" class="w-full h-full block"></canvas>
+                        <!-- 儀表刻度浮水印 -->
+                        <div class="absolute top-1.5 left-2.5 font-mono-tech text-[9px] text-slate-500 pointer-events-none">
+                            SPECTRUM &amp; PEAK TELEMETRY [dBFS]
+                        </div>
+                        <div class="absolute top-1.5 right-2.5 font-mono-tech text-[9px] text-cyan-400/80 pointer-events-none" id="peak-readout">
+                            -INF dB
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 嵌入式 YouTube 視訊監看模組 (保持合規尺寸 >= 240x135 避免 Error 153 隱藏播放器阻擋) -->
+                <div id="yt-monitor-bay" class="rack-module rounded-xl p-3 transition-all duration-300 hidden">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <span class="font-mono-tech text-[10px] text-amber-400 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                            CH-B // YOUTUBE STREAM MONITOR
+                        </span>
+                        <span class="font-mono-tech text-[10px] text-slate-500">IFRAME API v3</span>
+                    </div>
+                    <div class="w-full max-w-md mx-auto aspect-video rounded-lg overflow-hidden border border-white/10 bg-black relative">
+                        <div id="youtube-player-mount" class="w-full h-full"></div>
+                    </div>
+                </div>
+
+                <!-- 異常與錯誤診斷橫幅 (檔案遺失或 YouTube Error 153 專屬修復導引) -->
+                <div id="diagnostic-banner" class="hidden rack-module rounded-xl p-3.5 border-amber-500/40 bg-amber-950/20">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-2.5 text-xs">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 shrink-0"></i>
+                            <div class="space-y-1">
+                                <p id="diagnostic-title" class="font-semibold text-amber-300">訊號路由異常</p>
+                                <p id="diagnostic-desc" class="text-slate-300 text-[11px] leading-relaxed"></p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-1.5 shrink-0">
+                            <a id="btn-open-yt-external" href="#" target="_blank" rel="noopener noreferrer" class="hidden hw-btn px-2.5 py-1.5 rounded text-[11px] font-mono-tech text-amber-300 text-center">
+                                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>原頁開啟
+                            </a>
+                            <button id="btn-diag-next" class="hw-btn px-2.5 py-1.5 rounded text-[11px] font-mono-tech text-cyan-300">
+                                跳下一首 &raquo;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 時間軸推桿與高精度時間碼 (TIMECODE & SCRUBBER) -->
+                <div class="rack-module rounded-xl p-3.5 sm:p-4 space-y-2.5">
+                    <div class="flex items-center justify-between font-mono-tech text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-500">ELAPSED</span>
+                            <span id="time-elapsed" class="text-cyan-400 font-semibold text-sm tracking-wider">00:00</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 tracking-widest hidden sm:block">
+                            TRANSPORT TIMELINE
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-500">TOTAL</span>
+                            <span id="time-total" class="text-slate-300 font-semibold text-sm tracking-wider">--:--</span>
+                        </div>
+                    </div>
+
+                    <div class="relative flex items-center py-1">
+                        <input type="range" id="timeline-fader" class="studio-fader w-full z-10" min="0" max="100" value="0" step="0.1">
+                        <div id="timeline-progress-bar" class="absolute left-0 h-1.5 rounded-l bg-gradient-to-r from-cyan-500 to-cyan-300 pointer-events-none" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- 實體硬體走帶控制區 (TRANSPORT DECK & MASTER GAIN FADER) -->
+                <div class="rack-module rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-4">
+                    
+                    <!-- 左側：循環與隨機微動開關 -->
+                    <div class="flex items-center gap-2">
+                        <button id="btn-shuffle" title="隨機路由 (SHUFFLE)" class="hw-btn w-10 h-10 rounded-lg text-slate-400 flex flex-col items-center justify-center gap-0.5">
+                            <i class="fa-solid fa-shuffle text-xs"></i>
+                            <span class="font-mono-tech text-[8px]">SHUF</span>
+                        </button>
+                        <button id="btn-loop" title="循環模式 (LOOP)" class="hw-btn hw-btn-active-cyan w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-0.5 relative">
+                            <i class="fa-solid fa-repeat text-xs"></i>
+                            <span id="loop-mode-label" class="font-mono-tech text-[8px]">ALL</span>
+                        </button>
+                    </div>
+
+                    <!-- 中央：主走帶按鍵 (PREV / PLAY-PAUSE / NEXT) -->
+                    <div class="flex items-center gap-2.5 sm:gap-3">
+                        <button id="btn-prev" title="上一軌 (PREV)" class="hw-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-slate-200 flex items-center justify-center">
+                            <i class="fa-solid fa-backward-step text-base"></i>
+                        </button>
+
+                        <button id="btn-play" title="播放 / 暫停 (SPACE)" class="hw-btn w-14 h-12 sm:w-16 sm:h-12 rounded-xl text-cyan-400 border-cyan-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.18)]">
+                            <i id="play-btn-icon" class="fa-solid fa-play text-lg ml-0.5"></i>
+                        </button>
+
+                        <button id="btn-next" title="下一軌 (NEXT)" class="hw-btn w-11 h-11 sm:w-12 sm:h-12 rounded-xl text-slate-200 flex items-center justify-center">
+                            <i class="fa-solid fa-forward-step text-base"></i>
+                        </button>
+                    </div>
+
+                    <!-- 右側：主輸出音量推桿 (MASTER GAIN FADER) -->
+                    <div class="flex items-center gap-2.5 bg-[#07090c] px-3 py-2 rounded-lg border border-white/5">
+                        <button id="btn-mute" title="靜音 (MUTE)" class="text-slate-300 hover:text-cyan-400 transition w-5 text-center">
+                            <i id="vol-icon" class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                        <div class="w-20 sm:w-24 relative flex items-center">
+                            <input type="range" id="volume-fader" class="studio-fader w-full z-10" min="0" max="1" step="0.01" value="0.8">
+                            <div id="volume-level-fill" class="absolute left-0 h-1.5 rounded-l bg-cyan-400/80 pointer-events-none" style="width: 80%;"></div>
+                        </div>
+                        <span id="volume-db-text" class="font-mono-tech text-[10px] text-slate-400 w-8 text-right">80%</span>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==================== 右側：機架曲目庫與訊號源匯入模組 (5 欄) ==================== -->
+            <aside class="lg:col-span-5 rack-module rounded-xl p-4 flex flex-col justify-between">
+                
+                <!-- 機架分頁切換鍵 -->
+                <div class="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#05070a] border border-white/5 mb-3.5">
+                    <button id="tab-btn-rack" class="hw-btn hw-btn-active-cyan py-2 px-3 rounded-md font-mono-tech text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-server text-[11px]"></i>
+                        <span>TRACK RACK (<span id="rack-count">4</span>)</span>
+                    </button>
+                    <button id="tab-btn-patch" class="py-2 px-3 rounded-md font-mono-tech text-xs text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plug text-[11px]"></i>
+                        <span>PATCH / ADD</span>
+                    </button>
+                </div>
+
+                <!-- 分頁 1：機架播放清單 (所有檔名與歌名嚴格以宋體顯示) -->
+                <div id="panel-rack" class="flex-1 flex flex-col min-h-0">
+                    <div id="playlist-rack-list" class="space-y-2 overflow-y-auto max-h-[380px] pr-1 flex-1 rounded-lg border border-transparent transition-colors">
+                        <!-- 由 JS 動態渲染機架曲目插槽 -->
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between font-mono-tech text-[10px] text-slate-500">
+                        <span>DRAG &amp; DROP .MP3 TO RACK</span>
+                        <span class="text-cyan-400/80">SONGTI DISPLAY ACTIVE</span>
+                    </div>
+                </div>
+
+                <!-- 分頁 2：訊號源跳線面板 (匯入本地檔案 + 新增 YouTube 連結) -->
+                <div id="panel-patch" class="hidden flex-1 flex flex-col justify-between space-y-4 overflow-y-auto max-h-[410px] pr-1">
+                    
+                    <!-- 模組 A：本地 PCM 音訊檔案匯入 -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between font-mono-tech text-[11px] text-cyan-400">
+                            <span><i class="fa-solid fa-hard-drive mr-1.5"></i>CH-A // LOCAL AUDIO PATCH</span>
+                            <span class="text-[10px] text-slate-500">MP3 / WAV / FLAC</span>
+                        </div>
+                        <div id="drop-patch-zone" class="border border-dashed border-white/20 hover:border-cyan-400/70 rounded-xl p-4 text-center cursor-pointer transition bg-[#07090d]">
+                            <input type="file" id="file-picker-input" accept="audio/*" multiple class="hidden">
+                            <i class="fa-solid fa-file-audio text-2xl text-cyan-400 mb-1.5"></i>
+                            <p class="text-xs text-slate-200 font-medium">點擊選取或拖放本地音訊檔至此</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">自動去除副檔名並以宋體載入機架</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/10"></div>
+
+                    <!-- 模組 B：YouTube 串流訊號輸入 -->
+                    <form id="yt-patch-form" class="space-y-2.5">
+                        <div class="flex items-center justify-between font-mono-tech text-[11px] text-amber-400">
+                            <span><i class="fa-brands fa-youtube mr-1.5"></i>CH-B // YOUTUBE STREAM PATCH</span>
+                            <span class="text-[10px] text-slate-500">URL OR 11-CHAR ID</span>
+                        </div>
+                        <div>
+                            <input type="text" id="input-yt-url" placeholder="貼上 YouTube 網址或影片 ID (如 jfKfPfyJRdk)" required
+                                class="w-full px-3 py-2 rounded-lg bg-[#05070a] border border-white/15 font-mono-tech text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 transition">
+                        </div>
+                        <div>
+                            <input type="text" id="input-yt-title" placeholder="自訂宋體顯示名稱 (留空則自動讀取影片標題)"
+                                class="w-full px-3 py-2 rounded-lg bg-[#05070a] border border-white/15 font-songti text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition">
+                        </div>
+                        <button type="submit" class="hw-btn w-full py-2.5 rounded-lg font-mono-tech text-xs text-amber-300 border-amber-500/40 hover:border-amber-400 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>PATCH TO RACK &amp; PLAY</span>
+                        </button>
+                    </form>
+
+                    <!-- Error 153 技術說明卡 -->
+                    <div class="p-2.5 rounded-lg bg-[#06080b] border border-white/5 text-[10px] text-slate-400 leading-relaxed">
+                        <span class="text-amber-400 font-mono-tech font-semibold">[NOTE // ERROR 153 PREVENTION]</span><br>
+                        若直接雙擊本地 HTML 檔（<code class="text-slate-300">file://</code>）開啟，瀏覽器會隱藏來源網址導致部分 YouTube 影片回傳代碼 153。建議透過本機伺服器（如 VS Code Live Server）開啟，或選用允許無 Referer 嵌入的音樂頻道。
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+    </main>
+
+    <!-- 隱藏原生 HTML5 Audio 引擎 -->
+    <audio id="native-audio-engine" preload="metadata"></audio>
+
+    <!-- 控台底部狀態提示條 (HUD Toast) -->
+    <div id="hud-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-[#0d1117] border border-cyan-500/40 text-xs font-mono-tech text-cyan-300 opacity-0 pointer-events-none transition-opacity duration-200 z-50 shadow-[0_10px_30px_rgba(0,0,0,0.85)] flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+        <span id="hud-toast-text">SYSTEM READY</span>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. 【預設曲目配置陣列 DEFAULT_PLAYLIST】
+         * ============================================================================
+         * 您可直接在此修改預設背景音樂：
+         * - 本地音訊：{ type: 'audio', src: '我.mp3' } -> 自動顯示為宋體「我」
+         * - YouTube：{ type: 'youtube', url: 'https://www.youtube.com/watch?v=影片ID', title: '曲目名稱(選填)' }
+         */
+        const DEFAULT_PLAYLIST = [
+            {
+                type: 'audio',
+                src: '我.mp3'
+            },
+            {
+                type: 'audio',
+                src: '2.mp3'
+            },
+            {
+                type: 'youtube',
+                url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+                title: 'Lofi Hip Hop Radio - 專注與放鬆節拍'
+            },
+            {
+                type: 'youtube',
+                url: 'https://www.youtube.com/watch?v=4xDzrJKXOOY',
+                title: 'Synthwave Radio - 深夜合成器浪潮'
+            }
+        ];
+
+        /**
+         * ============================================================================
+         * 2. 工具函式：純檔名擷取、YouTube ID 解析與時間格式化
+         * ============================================================================
+         */
+        function extractCleanFileName(filePath) {
+            if (!filePath) return '未命名音軌';
+            const base = filePath.split('/').pop().split('\\').pop();
+            const dotIdx = base.lastIndexOf('.');
+            return dotIdx > 0 ? base.substring(0, dotIdx) : base;
+        }
+
+        function parseYouTubeId(input) {
+            if (!input) return null;
+            const str = input.trim();
+            if (/^[a-zA-Z0-9_-]{11}$/.test(str)) return str;
+            const regexList = [
+                /(?:youtube\.com\/watch\?v=|youtube\.com\/watch\?.+&v=)([a-zA-Z0-9_-]{11})/,
+                /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+                /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+                /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+                /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+                /music\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/
+            ];
+            for (const rx of regexList) {
+                const m = str.match(rx);
+                if (m && m[1]) return m[1];
+            }
+            return null;
+        }
+
+        function formatTimecode(sec) {
+            if (!isFinite(sec) || sec < 0) return '--:--';
+            const s = Math.floor(sec);
+            const hrs = Math.floor(s / 3600);
+            const mins = Math.floor((s % 3600) / 60);
+            const secs = s % 60;
+            if (hrs > 0) {
+                return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        /**
+         * ============================================================================
+         * 3. 控台全域狀態管理
+         * ============================================================================
+         */
+        const consoleState = {
+            playlist: [],
+            currentIndex: 0,
+            isPlaying: false,
+            loopMode: 'all', // 'all' | 'one' | 'off'
+            isShuffle: false,
+            volume: 0.8,
+            isMuted: false,
+            isScrubbing: false,
+            monitorMode: 'auto', // 'auto' (播放YT時自動顯示) | 'show' | 'hide'
+            ytReady: false,
+            ytPlayer: null,
+            queuedYtTrack: null,
+            isHttpOriginValid: window.location.protocol.startsWith('http') && window.location.origin !== 'null'
+        };
+
+        function initPlaylistFromDefault() {
+            consoleState.playlist = DEFAULT_PLAYLIST.map((item, idx) => {
+                if (item.type === 'audio') {
+                    return {
+                        id: `slot-audio-${idx}-${Date.now()}`,
+                        type: 'audio',
+                        src: item.src,
+                        title: item.title || extractCleanFileName(item.src),
+                        subtitle: item.src,
+                        isBlob: false,
+                        error: false
+                    };
+                } else {
+                    const vid = parseYouTubeId(item.url);
+                    return {
+                        id: `slot-yt-${idx}-${Date.now()}`,
+                        type: 'youtube',
+                        url: item.url,
+                        videoId: vid,
+                        title: item.title || `YouTube 串流 (${vid || '無效ID'})`,
+                        subtitle: `YT-ID: ${vid || 'INVALID'}`,
+                        titleResolved: Boolean(item.title),
+                        error: !vid
+                    };
+                }
+            });
+        }
+
+        /**
+         * ============================================================================
+         * 4. DOM 節點快取與 HUD 提示
+         * ============================================================================
+         */
+        const ui = {
+            protocolBadge: document.getElementById('protocol-badge'),
+            protocolDot: document.getElementById('protocol-dot'),
+            protocolText: document.getElementById('protocol-text'),
+            btnToggleMonitor: document.getElementById('btn-toggle-monitor'),
+            monitorBtnLabel: document.getElementById('monitor-btn-label'),
+            masterLed: document.getElementById('master-led'),
+            masterStatusText: document.getElementById('master-status-text'),
+            chBadge: document.getElementById('ch-badge'),
+            sampleRateLabel: document.getElementById('sample-rate-label'),
+            trackIndexDisplay: document.getElementById('track-index-display'),
+            mainTrackTitle: document.getElementById('main-track-title'),
+            mainTrackSubtitle: document.getElementById('main-track-subtitle'),
+            sourceIconBox: document.getElementById('source-icon-box'),
+            sourceIcon: document.getElementById('source-icon'),
+            telemetryCanvas: document.getElementById('telemetry-canvas'),
+            peakReadout: document.getElementById('peak-readout'),
+            ytMonitorBay: document.getElementById('yt-monitor-bay'),
+            diagnosticBanner: document.getElementById('diagnostic-banner'),
+            diagnosticTitle: document.getElementById('diagnostic-title'),
+            diagnosticDesc: document.getElementById('diagnostic-desc'),
+            btnOpenYtExternal: document.getElementById('btn-open-yt-external'),
+            btnDiagNext: document.getElementById('btn-diag-next'),
+            timeElapsed: document.getElementById('time-elapsed'),
+            timeTotal: document.getElementById('time-total'),
+            timelineFader: document.getElementById('timeline-fader'),
+            timelineProgressBar: document.getElementById('timeline-progress-bar'),
+            btnShuffle: document.getElementById('btn-shuffle'),
+            btnLoop: document.getElementById('btn-loop'),
+            loopModeLabel: document.getElementById('loop-mode-label'),
+            btnPrev: document.getElementById('btn-prev'),
+            btnPlay: document.getElementById('btn-play'),
+            playBtnIcon: document.getElementById('play-btn-icon'),
+            btnNext: document.getElementById('btn-next'),
+            btnMute: document.getElementById('btn-mute'),
+            volIcon: document.getElementById('vol-icon'),
+            volumeFader: document.getElementById('volume-fader'),
+            volumeLevelFill: document.getElementById('volume-level-fill'),
+            volumeDbText: document.getElementById('volume-db-text'),
+            tabBtnRack: document.getElementById('tab-btn-rack'),
+            tabBtnPatch: document.getElementById('tab-btn-patch'),
+            rackCount: document.getElementById('rack-count'),
+            panelRack: document.getElementById('panel-rack'),
+            panelPatch: document.getElementById('panel-patch'),
+            playlistRackList: document.getElementById('playlist-rack-list'),
+            dropPatchZone: document.getElementById('drop-patch-zone'),
+            filePickerInput: document.getElementById('file-picker-input'),
+            ytPatchForm: document.getElementById('yt-patch-form'),
+            inputYtUrl: document.getElementById('input-yt-url'),
+            inputYtTitle: document.getElementById('input-yt-title'),
+            audioEngine: document.getElementById('native-audio-engine'),
+            hudToast: document.getElementById('hud-toast'),
+            hudToastText: document.getElementById('hud-toast-text')
+        };
+
+        let toastTimer = null;
+        function showHudToast(msg) {
+            ui.hudToastText.textContent = msg;
+            ui.hudToast.classList.remove('opacity-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => ui.hudToast.classList.add('opacity-0'), 2600);
+        }
+
+        // 檢測當前執行環境是否具備合法 HTTP Origin (用於診斷 Error 153)
+        function checkExecutionProtocol() {
+            if (consoleState.isHttpOriginValid) {
+                ui.protocolDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+                ui.protocolText.textContent = 'ORIGIN VERIFIED';
+            } else {
+                ui.protocolDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+                ui.protocolText.textContent = 'SANDBOX / FILE://';
+                ui.protocolBadge.title = '目前位於本地 file:// 或沙盒預覽環境，部分 YouTube 影片可能會觸發代碼 153 來源限制';
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 5. CH-A：本地 PCM / HTML5 Audio 引擎與 Web Audio API 頻譜分析器
+         * ============================================================================
+         */
+        let audioCtx = null;
+        let analyserNode = null;
+        let mediaSourceNode = null;
+
+        function ensureWebAudioGraph() {
+            if (audioCtx) return;
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new Ctx();
+                analyserNode = audioCtx.createAnalyser();
+                analyserNode.fftSize = 256;
+                analyserNode.smoothingTimeConstant = 0.82;
+
+                mediaSourceNode = audioCtx.createMediaElementSource(ui.audioEngine);
+                mediaSourceNode.connect(analyserNode);
+                analyserNode.connect(audioCtx.destination);
+            } catch (err) {
+                console.warn('Web Audio API 節點建立略過:', err);
+            }
+        }
+
+        ui.audioEngine.addEventListener('loadedmetadata', () => {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'audio') return;
+            track.error = false;
+            ui.diagnosticBanner.classList.add('hidden');
+            ui.timelineFader.max = ui.audioEngine.duration || 100;
+            ui.timeTotal.textContent = formatTimecode(ui.audioEngine.duration);
+        });
+
+        ui.audioEngine.addEventListener('timeupdate', () => {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'audio' || consoleState.isScrubbing) return;
+            updateTimelineUI(ui.audioEngine.currentTime || 0, ui.audioEngine.duration || 100);
+        });
+
+        ui.audioEngine.addEventListener('ended', () => {
+            advanceAfterTrackEnd();
+        });
+
+        ui.audioEngine.addEventListener('error', () => {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'audio') return;
+
+            track.error = true;
+            consoleState.isPlaying = false;
+            syncTransportUI();
+            renderTrackRack();
+
+            showDiagnostic(
+                `找不到本地音訊檔案「${track.subtitle}」`,
+                `請確認已將「${track.subtitle}」放置於與此網頁相同的資料夾中，或點擊右側「PATCH / ADD」直接從電腦匯入音訊檔案。`,
+                null
+            );
+        });
+
+        /**
+         * ============================================================================
+         * 6. CH-B：YouTube IFrame API 引擎 (含 Error 153 深度防護與修復)
+         * ============================================================================
+         */
+        (function injectYouTubeIframeAPI() {
+            const s = document.createElement('script');
+            s.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(s);
+        })();
+
+        window.onYouTubeIframeAPIReady = function () {
+            consoleState.ytReady = true;
+
+            // 關鍵修復 2 (Error 153)：僅在合法 http/https 環境下傳遞 origin，避免 file:// 或 null origin 導致設定衝突
+            const playerVarsConfig = {
+                autoplay: 0,
+                controls: 1,
+                rel: 0,
+                modestbranding: 1,
+                playsinline: 1,
+                enablejsapi: 1
+            };
+            if (consoleState.isHttpOriginValid) {
+                playerVarsConfig.origin = window.location.origin;
+            }
+
+            consoleState.ytPlayer = new YT.Player('youtube-player-mount', {
+                height: '100%',
+                width: '100%',
+                playerVars: playerVarsConfig,
+                events: {
+                    onReady: (e) => {
+                        // 關鍵修復 3 (Error 153)：強制為生成的 iframe 補上標準 referrerpolicy 與權限屬性
+                        try {
+                            const iframeEl = e.target.getIframe();
+                            if (iframeEl) {
+                                iframeEl.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                                iframeEl.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                            }
+                        } catch (err) {}
+
+                        syncMasterVolume();
+                        if (consoleState.queuedYtTrack) {
+                            const pending = consoleState.queuedYtTrack;
+                            consoleState.queuedYtTrack = null;
+                            startYouTubePlayback(pending, consoleState.isPlaying);
+                        }
+                    },
+                    onStateChange: handleYtStateChange,
+                    onError: handleYtPlayerError
+                }
+            });
+        };
+
+        function handleYtStateChange(event) {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'youtube') return;
+
+            if (event.data === YT.PlayerState.PLAYING) {
+                consoleState.isPlaying = true;
+                track.error = false;
+                ui.diagnosticBanner.classList.add('hidden');
+                syncTransportUI();
+
+                // 自動抓取 YouTube 真實影片標題並以宋體更新
+                if (!track.titleResolved && consoleState.ytPlayer && consoleState.ytPlayer.getVideoData) {
+                    const info = consoleState.ytPlayer.getVideoData();
+                    if (info && info.title) {
+                        track.title = info.title;
+                        track.titleResolved = true;
+                        ui.mainTrackTitle.textContent = info.title;
+                        renderTrackRack();
+                    }
+                }
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                consoleState.isPlaying = false;
+                syncTransportUI();
+            } else if (event.data === YT.PlayerState.ENDED) {
+                advanceAfterTrackEnd();
+            }
+        }
+
+        function handleYtPlayerError(event) {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'youtube') return;
+
+            const code = event.data;
+            track.error = true;
+            consoleState.isPlaying = false;
+            syncTransportUI();
+            renderTrackRack();
+
+            const watchUrl = `https://www.youtube.com/watch?v=${track.videoId}`;
+            let titleMsg = `YouTube 播放器回報錯誤代碼 ${code}`;
+            let detailMsg = '此影片可能不允許第三方網頁嵌入播放，請嘗試更換其他音樂連結或點擊「原頁開啟」。';
+
+            if (code === 153) {
+                titleMsg = 'YouTube 錯誤代碼 153（播放器來源標頭 / 網域設定限制）';
+                detailMsg = consoleState.isHttpOriginValid
+                    ? '目前所在的預覽框架隱藏了 HTTP Referer 標頭，或該影片擁有者封鎖了嵌入請求。您可點擊右側「原頁開啟」直接收聽，或將本檔案部署至標準網站伺服器。'
+                    : '偵測到您正以本地檔案（file://）開啟網頁，瀏覽器未傳送 Referer 來源標頭導致 YouTube 拒絕播放（代碼 153）。請使用 VS Code Live Server 等本機伺服器開啟，或點擊「原頁開啟」。';
+            } else if (code === 101 || code === 150) {
+                titleMsg = `YouTube 錯誤代碼 ${code}（版權方限制嵌入播放）`;
+                detailMsg = '該音樂頻道已設定禁止在外部播放器中嵌入播放，請點擊「原頁開啟」或切換至其他曲目。';
+            }
+
+            showDiagnostic(titleMsg, detailMsg, watchUrl);
+        }
+
+        function startYouTubePlayback(track, autoPlay) {
+            if (!track.videoId) {
+                showHudToast('INVALID YOUTUBE VIDEO ID');
+                return;
+            }
+            if (!consoleState.ytPlayer || typeof consoleState.ytPlayer.loadVideoById !== 'function') {
+                consoleState.queuedYtTrack = track;
+                return;
+            }
+            syncMasterVolume();
+            if (autoPlay) {
+                consoleState.ytPlayer.loadVideoById(track.videoId);
+            } else {
+                consoleState.ytPlayer.cueVideoById(track.videoId);
+            }
+        }
+
+        // 輪詢 YouTube 進度條時間碼
+        setInterval(() => {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track || track.type !== 'youtube' || consoleState.isScrubbing) return;
+            if (consoleState.ytPlayer && typeof consoleState.ytPlayer.getCurrentTime === 'function') {
+                const cur = consoleState.ytPlayer.getCurrentTime() || 0;
+                const dur = consoleState.ytPlayer.getDuration() || 0;
+                if (dur > 0) updateTimelineUI(cur, dur);
+            }
+        }, 250);
+
+        /**
+         * ============================================================================
+         * 7. 控台主路由與走帶控制邏輯
+         * ============================================================================
+         */
+        function haltAllChannels() {
+            ui.audioEngine.pause();
+            if (consoleState.ytPlayer && typeof consoleState.ytPlayer.pauseVideo === 'function') {
+                try { consoleState.ytPlayer.pauseVideo(); } catch (e) {}
+            }
+        }
+
+        function updateMonitorVisibility(isYtTrack) {
+            if (!isYtTrack) {
+                ui.ytMonitorBay.classList.add('hidden');
+                return;
+            }
+            // 關鍵修復 4 (Error 153)：確保 YT 播放器顯示時維持完整可見尺寸，不縮為 0x0
+            if (consoleState.monitorMode === 'hide') {
+                ui.ytMonitorBay.classList.add('hidden');
+            } else {
+                ui.ytMonitorBay.classList.remove('hidden');
+            }
+        }
+
+        function loadConsoleSlot(index, autoPlay = true) {
+            if (consoleState.playlist.length === 0) return;
+            consoleState.currentIndex = (index + consoleState.playlist.length) % consoleState.playlist.length;
+            const track = consoleState.playlist[consoleState.currentIndex];
+
+            haltAllChannels();
+            ui.diagnosticBanner.classList.add('hidden');
+            updateTimelineUI(0, 100);
+            ui.timeTotal.textContent = '--:--';
+
+            // 更新 OLED 顯示幕資訊 (曲目名稱嚴格套用宋體)
+            ui.mainTrackTitle.textContent = track.title;
+            ui.mainTrackSubtitle.textContent = track.type === 'audio'
+                ? `FILE: ${track.subtitle}`
+                : `STREAM: https://youtu.be/${track.videoId}`;
+            ui.trackIndexDisplay.textContent = `SLOT ${String(consoleState.currentIndex + 1).padStart(2, '0')} / ${String(consoleState.playlist.length).padStart(2, '0')}`;
+
+            if (track.type === 'audio') {
+                // 切換至 CH-A (青色遙測主題)
+                ui.chBadge.textContent = 'CH-A // LOCAL PCM';
+                ui.chBadge.className = 'px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold';
+                ui.sampleRateLabel.textContent = track.isBlob ? 'USER PATCH // PCM' : 'PRESET RACK // PCM';
+                ui.sourceIconBox.className = 'w-12 h-12 rounded-xl bg-[#11151e] border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400 shadow-inner';
+                ui.sourceIcon.className = 'fa-solid fa-wave-square text-lg';
+                ui.timelineProgressBar.className = 'absolute left-0 h-1.5 rounded-l bg-gradient-to-r from-cyan-500 to-cyan-300 pointer-events-none';
+                ui.volumeLevelFill.className = 'absolute left-0 h-1.5 rounded-l bg-cyan-400/80 pointer-events-none';
+
+                updateMonitorVisibility(false);
+                ui.audioEngine.src = track.src;
+                ui.audioEngine.load();
+                syncMasterVolume();
+
+                if (autoPlay) {
+                    ensureWebAudioGraph();
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    const p = ui.audioEngine.play();
+                    if (p !== undefined) {
+                        p.then(() => {
+                            consoleState.isPlaying = true;
+                            syncTransportUI();
+                        }).catch(() => {
+                            consoleState.isPlaying = false;
+                            syncTransportUI();
+                        });
+                    }
+                } else {
+                    consoleState.isPlaying = false;
+                    syncTransportUI();
+                }
+            } else {
+                // 切換至 CH-B (琥珀金遙測主題)
+                ui.chBadge.textContent = 'CH-B // YOUTUBE STREAM';
+                ui.chBadge.className = 'px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold';
+                ui.sampleRateLabel.textContent = 'OPUS / AAC STREAM';
+                ui.sourceIconBox.className = 'w-12 h-12 rounded-xl bg-[#11151e] border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400 shadow-inner';
+                ui.sourceIcon.className = 'fa-brands fa-youtube text-xl';
+                ui.timelineProgressBar.className = 'absolute left-0 h-1.5 rounded-l bg-gradient-to-r from-amber-500 to-amber-300 pointer-events-none';
+                ui.volumeLevelFill.className = 'absolute left-0 h-1.5 rounded-l bg-amber-400/80 pointer-events-none';
+
+                updateMonitorVisibility(true);
+                consoleState.isPlaying = autoPlay;
+                syncTransportUI();
+                startYouTubePlayback(track, autoPlay);
+            }
+
+            renderTrackRack();
+        }
+
+        function toggleMasterPlay() {
+            if (consoleState.playlist.length === 0) return;
+            const track = consoleState.playlist[consoleState.currentIndex];
+
+            if (track.type === 'audio') {
+                if (consoleState.isPlaying) {
+                    ui.audioEngine.pause();
+                    consoleState.isPlaying = false;
+                } else {
+                    ensureWebAudioGraph();
+                    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                    ui.audioEngine.play().then(() => {
+                        consoleState.isPlaying = true;
+                        syncTransportUI();
+                    }).catch(() => {
+                        showHudToast('AUDIO FILE NOT FOUND');
+                    });
+                }
+            } else {
+                if (!consoleState.ytPlayer || typeof consoleState.ytPlayer.playVideo !== 'function') {
+                    showHudToast('INITIALIZING YOUTUBE ENGINE...');
+                    return;
+                }
+                if (consoleState.isPlaying) {
+                    consoleState.ytPlayer.pauseVideo();
+                    consoleState.isPlaying = false;
+                } else {
+                    consoleState.ytPlayer.playVideo();
+                    consoleState.isPlaying = true;
+                }
+            }
+            syncTransportUI();
+        }
+
+        function advanceAfterTrackEnd() {
+            if (consoleState.loopMode === 'one') {
+                loadConsoleSlot(consoleState.currentIndex, true);
+                return;
+            }
+            if (consoleState.isShuffle && consoleState.playlist.length > 1) {
+                let rnd;
+                do { rnd = Math.floor(Math.random() * consoleState.playlist.length); } while (rnd === consoleState.currentIndex);
+                loadConsoleSlot(rnd, true);
+                return;
+            }
+            if (consoleState.currentIndex < consoleState.playlist.length - 1 || consoleState.loopMode === 'all') {
+                loadConsoleSlot(consoleState.currentIndex + 1, true);
+            } else {
+                consoleState.isPlaying = false;
+                syncTransportUI();
+            }
+        }
+
+        function stepNextTrack() {
+            if (consoleState.isShuffle && consoleState.playlist.length > 1) {
+                let rnd;
+                do { rnd = Math.floor(Math.random() * consoleState.playlist.length); } while (rnd === consoleState.currentIndex);
+                loadConsoleSlot(rnd, true);
+            } else {
+                loadConsoleSlot(consoleState.currentIndex + 1, true);
+            }
+        }
+
+        function stepPrevTrack() {
+            loadConsoleSlot(consoleState.currentIndex - 1, true);
+        }
+
+        /**
+         * ============================================================================
+         * 8. UI 同步更新與機架清單渲染
+         * ============================================================================
+         */
+        function showDiagnostic(title, desc, externalUrl) {
+            ui.diagnosticTitle.textContent = title;
+            ui.diagnosticDesc.textContent = desc;
+            if (externalUrl) {
+                ui.btnOpenYtExternal.href = externalUrl;
+                ui.btnOpenYtExternal.classList.remove('hidden');
+            } else {
+                ui.btnOpenYtExternal.classList.add('hidden');
+            }
+            ui.diagnosticBanner.classList.remove('hidden');
+        }
+
+        function syncTransportUI() {
+            const track = consoleState.playlist[consoleState.currentIndex];
+            const isYt = track && track.type === 'youtube';
+
+            if (consoleState.isPlaying) {
+                ui.playBtnIcon.className = 'fa-solid fa-pause text-lg';
+                ui.masterLed.className = isYt
+                    ? 'w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#ffab00] animate-pulse'
+                    : 'w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff] animate-pulse';
+                ui.masterStatusText.textContent = isYt ? 'ON AIR // YT' : 'ON AIR // PCM';
+                ui.masterStatusText.className = isYt ? 'text-amber-300 font-semibold' : 'text-cyan-300 font-semibold';
+            } else {
+                ui.playBtnIcon.className = 'fa-solid fa-play text-lg ml-0.5';
+                ui.masterLed.className = 'w-2 h-2 rounded-full bg-slate-600';
+                ui.masterStatusText.textContent = 'STANDBY';
+                ui.masterStatusText.className = 'text-slate-400';
+            }
+            renderTrackRack();
+        }
+
+        function updateTimelineUI(cur, dur) {
+            const safeDur = dur > 0 ? dur : 100;
+            const pct = Math.min(100, Math.max(0, (cur / safeDur) * 100));
+            ui.timelineFader.max = safeDur;
+            ui.timelineFader.value = cur;
+            ui.timelineProgressBar.style.width = `${pct}%`;
+            ui.timeElapsed.textContent = formatTimecode(cur);
+            if (dur > 0) ui.timeTotal.textContent = formatTimecode(dur);
+        }
+
+        function syncMasterVolume() {
+            const vol = consoleState.isMuted ? 0 : consoleState.volume;
+            ui.audioEngine.volume = vol;
+            if (consoleState.ytPlayer && typeof consoleState.ytPlayer.setVolume === 'function') {
+                try {
+                    if (consoleState.isMuted) consoleState.ytPlayer.mute();
+                    else {
+                        consoleState.ytPlayer.unMute();
+                        consoleState.ytPlayer.setVolume(Math.round(vol * 100));
+                    }
+                } catch (e) {}
+            }
+            ui.volumeLevelFill.style.width = `${vol * 100}%`;
+            ui.volumeDbText.textContent = consoleState.isMuted ? 'MUTE' : `${Math.round(vol * 100)}%`;
+
+            if (consoleState.isMuted || vol === 0) {
+                ui.volIcon.className = 'fa-solid fa-volume-xmark text-xs text-rose-400';
+            } else if (vol < 0.5) {
+                ui.volIcon.className = 'fa-solid fa-volume-low text-xs';
+            } else {
+                ui.volIcon.className = 'fa-solid fa-volume-high text-xs';
+            }
+        }
+
+        // 渲染右側機架播放清單（檔名與歌名嚴格以宋體顯示）
+        function renderTrackRack() {
+            ui.rackCount.textContent = consoleState.playlist.length;
+            ui.playlistRackList.innerHTML = '';
+
+            if (consoleState.playlist.length === 0) {
+                ui.playlistRackList.innerHTML = `
+                    <div class="text-center py-12 font-mono-tech text-xs text-slate-500">
+                        [ RACK EMPTY ]<br><span class="font-sans text-[11px] mt-1 block">請切換至 PATCH / ADD 匯入音訊或 YouTube</span>
+                    </div>
+                `;
+                return;
+            }
+
+            consoleState.playlist.forEach((track, idx) => {
+                const isActive = idx === consoleState.currentIndex;
+                const isYt = track.type === 'youtube';
+                const activeClass = isActive ? (isYt ? 'active-amber' : 'active-cyan') : '';
+                const ledColor = isYt ? 'text-amber-400' : 'text-cyan-400';
+
+                const slotEl = document.createElement('div');
+                slotEl.className = `rack-slot ${activeClass} rounded-lg p-2.5 cursor-pointer flex items-center justify-between gap-2.5 group`;
+                slotEl.onclick = (e) => {
+                    if (e.target.closest('.btn-eject-slot')) return;
+                    loadConsoleSlot(idx, true);
+                };
+
+                slotEl.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                        <!-- 機架編號與狀態指示 -->
+                        <div class="w-8 h-8 rounded bg-[#06080b] border border-white/10 flex flex-col items-center justify-center shrink-0 ${isActive ? ledColor : 'text-slate-500'}">
+                            ${isActive && consoleState.isPlaying ? `
+                                <div class="flex items-end gap-0.5 h-3 eq-active">
+                                    <span class="w-0.5 bg-current b1"></span>
+                                    <span class="w-0.5 bg-current b2"></span>
+                                    <span class="w-0.5 bg-current b3"></span>
+                                </div>
+                            ` : `<span class="font-mono-tech text-[10px] font-bold">${String(idx + 1).padStart(2, '0')}</span>`}
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <!-- 曲目名稱／純檔名：嚴格套用宋體 font-songti -->
+                            <h4 class="font-songti text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-slate-200'}">
+                                ${track.title}
+                            </h4>
+                            <div class="flex items-center gap-1.5 mt-0.5 font-mono-tech text-[10px]">
+                                <span class="px-1.5 rounded ${isYt ? 'bg-amber-500/15 text-amber-300' : 'bg-cyan-500/15 text-cyan-300'}">
+                                    ${isYt ? 'CH-B // YT' : 'CH-A // FILE'}
+                                </span>
+                                <span class="text-slate-500 truncate">${track.subtitle}</span>
+                                ${track.error ? '<span class="text-rose-400" title="載入異常"><i class="fa-solid fa-circle-exclamation"></i></span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button title="退出此音軌 (EJECT)" class="btn-eject-slot opacity-0 group-hover:opacity-100 p-1.5 rounded text-slate-500 hover:text-rose-400 hover:bg-white/5 transition shrink-0">
+                        <i class="fa-solid fa-eject text-xs"></i>
+                    </button>
+                `;
+
+                slotEl.querySelector('.btn-eject-slot').onclick = (e) => {
+                    e.stopPropagation();
+                    ejectRackSlot(idx);
+                };
+
+                ui.playlistRackList.appendChild(slotEl);
+            });
+        }
+
+        function ejectRackSlot(idx) {
+            const isCurrent = idx === consoleState.currentIndex;
+            consoleState.playlist.splice(idx, 1);
+
+            if (consoleState.playlist.length === 0) {
+                haltAllChannels();
+                consoleState.isPlaying = false;
+                ui.mainTrackTitle.textContent = '無載入音軌';
+                ui.mainTrackSubtitle.textContent = 'RACK EMPTY';
+                syncTransportUI();
+                renderTrackRack();
+                return;
+            }
+
+            if (isCurrent) {
+                loadConsoleSlot(idx % consoleState.playlist.length, consoleState.isPlaying);
+            } else {
+                if (idx < consoleState.currentIndex) consoleState.currentIndex--;
+                renderTrackRack();
+            }
+            showHudToast('TRACK EJECTED FROM RACK');
+        }
+
+        /**
+         * ============================================================================
+         * 9. 硬體控制按鍵、推桿與分頁事件綁定
+         * ============================================================================
+         */
+        ui.btnPlay.addEventListener('click', toggleMasterPlay);
+        ui.btnNext.addEventListener('click', stepNextTrack);
+        ui.btnPrev.addEventListener('click', stepPrevTrack);
+        ui.btnDiagNext.addEventListener('click', stepNextTrack);
+
+        ui.btnShuffle.addEventListener('click', () => {
+            consoleState.isShuffle = !consoleState.isShuffle;
+            ui.btnShuffle.classList.toggle('hw-btn-active-cyan', consoleState.isShuffle);
+            ui.btnShuffle.classList.toggle('text-slate-400', !consoleState.isShuffle);
+            showHudToast(consoleState.isShuffle ? 'SHUFFLE ROUTING: ON' : 'SHUFFLE ROUTING: OFF');
+        });
+
+        ui.btnLoop.addEventListener('click', () => {
+            if (consoleState.loopMode === 'all') {
+                consoleState.loopMode = 'one';
+                ui.loopModeLabel.textContent = 'ONE';
+                ui.btnLoop.classList.add('hw-btn-active-cyan');
+                showHudToast('LOOP MODE: SINGLE TRACK');
+            } else if (consoleState.loopMode === 'one') {
+                consoleState.loopMode = 'off';
+                ui.loopModeLabel.textContent = 'OFF';
+                ui.btnLoop.classList.remove('hw-btn-active-cyan');
+                ui.btnLoop.classList.add('text-slate-400');
+                showHudToast('LOOP MODE: OFF');
+            } else {
+                consoleState.loopMode = 'all';
+                ui.loopModeLabel.textContent = 'ALL';
+                ui.btnLoop.classList.remove('text-slate-400');
+                ui.btnLoop.classList.add('hw-btn-active-cyan');
+                showHudToast('LOOP MODE: ALL RACK');
+            }
+        });
+
+        ui.timelineFader.addEventListener('input', (e) => {
+            consoleState.isScrubbing = true;
+            updateTimelineUI(parseFloat(e.target.value), parseFloat(ui.timelineFader.max) || 100);
+        });
+
+        ui.timelineFader.addEventListener('change', (e) => {
+            const targetSec = parseFloat(e.target.value);
+            consoleState.isScrubbing = false;
+            const track = consoleState.playlist[consoleState.currentIndex];
+            if (!track) return;
+            if (track.type === 'audio') {
+                ui.audioEngine.currentTime = targetSec;
+            } else if (track.type === 'youtube' && consoleState.ytPlayer && typeof consoleState.ytPlayer.seekTo === 'function') {
+                consoleState.ytPlayer.seekTo(targetSec, true);
+            }
+        });
+
+        ui.volumeFader.addEventListener('input', (e) => {
+            consoleState.volume = parseFloat(e.target.value);
+            if (consoleState.isMuted && consoleState.volume > 0) consoleState.isMuted = false;
+            syncMasterVolume();
+        });
+
+        ui.btnMute.addEventListener('click', () => {
+            consoleState.isMuted = !consoleState.isMuted;
+            syncMasterVolume();
+            showHudToast(consoleState.isMuted ? 'MASTER OUTPUT: MUTED' : 'MASTER OUTPUT: UNMUTED');
+        });
+
+        ui.btnToggleMonitor.addEventListener('click', () => {
+            if (consoleState.monitorMode === 'auto' || consoleState.monitorMode === 'show') {
+                consoleState.monitorMode = 'hide';
+                ui.monitorBtnLabel.textContent = 'YT MONITOR: OFF';
+            } else {
+                consoleState.monitorMode = 'show';
+                ui.monitorBtnLabel.textContent = 'YT MONITOR: ON';
+            }
+            const track = consoleState.playlist[consoleState.currentIndex];
+            updateMonitorVisibility(track && track.type === 'youtube');
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleMasterPlay();
+            }
+        });
+
+        // 右側分頁切換
+        function switchRightModule(target) {
+            if (target === 'rack') {
+                ui.panelRack.classList.remove('hidden');
+                ui.panelPatch.classList.add('hidden');
+                ui.tabBtnRack.className = 'hw-btn hw-btn-active-cyan py-2 px-3 rounded-md font-mono-tech text-xs flex items-center justify-center gap-2';
+                ui.tabBtnPatch.className = 'py-2 px-3 rounded-md font-mono-tech text-xs text-slate-400 hover:text-white transition flex items-center justify-center gap-2';
+            } else {
+                ui.panelRack.classList.add('hidden');
+                ui.panelPatch.classList.remove('hidden');
+                ui.tabBtnPatch.className = 'hw-btn hw-btn-active-cyan py-2 px-3 rounded-md font-mono-tech text-xs flex items-center justify-center gap-2';
+                ui.tabBtnRack.className = 'py-2 px-3 rounded-md font-mono-tech text-xs text-slate-400 hover:text-white transition flex items-center justify-center gap-2';
+            }
+        }
+
+        ui.tabBtnRack.addEventListener('click', () => switchRightModule('rack'));
+        ui.tabBtnPatch.addEventListener('click', () => switchRightModule('patch'));
+
+        // 匯入本地音訊檔
+        function handleLocalFileBatch(fileList) {
+            const validFiles = Array.from(fileList).filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f.name));
+            if (validFiles.length === 0) {
+                showHudToast('UNSUPPORTED AUDIO FORMAT');
+                return;
+            }
+            const startIdx = consoleState.playlist.length;
+            validFiles.forEach((file, i) => {
+                consoleState.playlist.push({
+                    id: `user-pcm-${Date.now()}-${i}`,
+                    type: 'audio',
+                    src: URL.createObjectURL(file),
+                    title: extractCleanFileName(file.name), // 自動去除副檔名，以宋體顯示
+                    subtitle: file.name,
+                    isBlob: true,
+                    error: false
+                });
+            });
+            renderTrackRack();
+            switchRightModule('rack');
+            showHudToast(`PATCHED ${validFiles.length} LOCAL TRACK(S)`);
+            loadConsoleSlot(startIdx, true);
+        }
+
+        ui.dropPatchZone.addEventListener('click', () => ui.filePickerInput.click());
+        ui.filePickerInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleLocalFileBatch(e.target.files);
+                e.target.value = '';
+            }
+        });
+
+        [ui.dropPatchZone, ui.playlistRackList].forEach(el => {
+            el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('drop-zone-active'); });
+            el.addEventListener('dragleave', () => el.classList.remove('drop-zone-active'));
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                el.classList.remove('drop-zone-active');
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleLocalFileBatch(e.dataTransfer.files);
+                }
+            });
+        });
+
+        // 新增 YouTube 連結表單
+        ui.ytPatchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const raw = ui.inputYtUrl.value.trim();
+            const customName = ui.inputYtTitle.value.trim();
+            const vid = parseYouTubeId(raw);
+
+            if (!vid) {
+                showHudToast('INVALID YOUTUBE URL OR ID');
+                return;
+            }
+
+            consoleState.playlist.push({
+                id: `user-yt-${Date.now()}`,
+                type: 'youtube',
+                url: raw,
+                videoId: vid,
+                title: customName || `YouTube 串流 (${vid})`,
+                subtitle: `YT-ID: ${vid}`,
+                titleResolved: Boolean(customName),
+                error: false
+            });
+
+            const newIdx = consoleState.playlist.length - 1;
+            ui.inputYtUrl.value = '';
+            ui.inputYtTitle.value = '';
+            renderTrackRack();
+            switchRightModule('rack');
+            showHudToast('YOUTUBE STREAM PATCHED');
+            loadConsoleSlot(newIdx, true);
+        });
+
+        /**
+         * ============================================================================
+         * 10. 專業母帶級雙通道頻譜與 LED 峰值遙測儀 (Canvas Telemetry)
+         * ============================================================================
+         */
+        function startTelemetryVisualizer() {
+            const canvas = ui.telemetryCanvas;
+            const ctx = canvas.getContext('2d');
+            let tick = 0;
+
+            function resize() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function renderFrame() {
+                requestAnimationFrame(renderFrame);
+                const w = canvas.parentElement.clientWidth;
+                const h = canvas.parentElement.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+
+                // 繪製背景分貝網格線 (-6dB, -12dB, -24dB)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                ctx.lineWidth = 1;
+                [0.25, 0.5, 0.75].forEach(ratio => {
+                    ctx.beginPath();
+                    ctx.moveTo(0, h * ratio);
+                    ctx.lineTo(w, h * ratio);
+                    ctx.stroke();
+                });
+
+                const track = consoleState.playlist[consoleState.currentIndex];
+                const isYt = track && track.type === 'youtube';
+                const primaryColor = isYt ? '#ffab00' : '#00e5ff';
+
+                let bins = null;
+                if (!isYt && analyserNode && consoleState.isPlaying) {
+                    bins = new Uint8Array(analyserNode.frequencyBinCount);
+                    analyserNode.getByteFrequencyData(bins);
+                }
+
+                tick += consoleState.isPlaying ? 0.06 : 0.015;
+                const barCount = 48;
+                const meterAreaW = w - 24;
+                const barW = (meterAreaW / barCount) - 2;
+                let maxEnergy = 0;
+
+                for (let i = 0; i < barCount; i++) {
+                    let norm = 0.04;
+                    if (consoleState.isPlaying) {
+                        if (bins) {
+                            const idx = Math.floor((i / barCount) * 56) + 1;
+                            norm = (bins[idx] || 0) / 255;
+                        } else {
+                            // YouTube 串流：模擬多頻段動態能量波
+                            const bass = Math.max(0, Math.sin(tick * 1.8 - i * 0.12)) * 0.55;
+                            const mid = Math.max(0, Math.cos(tick * 2.7 + i * 0.25)) * 0.35;
+                            const high = Math.sin(tick * 4.1 + i * 0.6) * 0.12;
+                            norm = Math.min(0.95, Math.max(0.08, bass + mid + high));
+                        }
+                    } else {
+                        norm = 0.03 + Math.sin(tick + i * 0.2) * 0.015;
+                    }
+
+                    if (norm > maxEnergy) maxEnergy = norm;
+
+                    const x = 12 + i * (barW + 2);
+                    const totalH = (h - 28) * norm;
+                    const segH = 3;
+                    const segGap = 2;
+                    const segments = Math.floor(totalH / (segH + segGap));
+
+                    // 分段式 LED 燈珠繪製
+                    for (let s = 0; s < segments; s++) {
+                        const y = h - 10 - (s * (segH + segGap)) - segH;
+                        const levelRatio = (s * (segH + segGap)) / (h - 28);
+                        if (levelRatio > 0.85) {
+                            ctx.fillStyle = '#ff2a5f'; // 峰值紅燈
+                        } else if (levelRatio > 0.65) {
+                            ctx.fillStyle = '#ffab00'; // 警告琥珀燈
+                        } else {
+                            ctx.fillStyle = primaryColor;
+                        }
+                        ctx.fillRect(x, y, barW, segH);
+                    }
+                }
+
+                // 更新右上角即時 dBFS 峰值讀數
+                if (consoleState.isPlaying && maxEnergy > 0.05) {
+                    const db = (20 * Math.log10(maxEnergy)).toFixed(1);
+                    ui.peakReadout.textContent = `${db} dBFS`;
+                } else {
+                    ui.peakReadout.textContent = '-INF dB';
+                }
+            }
+
+            renderFrame();
+        }
+
+        // 控台開機初始化
+        window.onload = () => {
+            checkExecutionProtocol();
+            initPlaylistFromDefault();
+            syncMasterVolume();
+            if (consoleState.playlist.length > 0) {
+                loadConsoleSlot(0, false);
+            }
+            startTelemetryVisualizer();
+        };
+    </script>
+</body>
+</html>
